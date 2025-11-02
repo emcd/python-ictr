@@ -18,37 +18,17 @@
 #============================================================================#
 
 
-''' Common names and type aliases. '''
+''' Miscellaneous package internals. '''
+
 
 
 from . import imports as __
 
 
-H = __.typx.TypeVar( 'H', bound = __.cabc.Hashable ) # Hash Key
-V = __.typx.TypeVar( 'V' ) # Value
-
-
-ComparisonResult: __.typx.TypeAlias = bool | __.types.NotImplementedType
-NominativeArguments: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
-PositionalArguments: __.typx.TypeAlias = __.cabc.Sequence[ __.typx.Any ]
-
-DictionaryNominativeArgument: __.typx.TypeAlias = __.typx.Annotated[
-    V,
-    __.ddoc.Doc(
-        'Zero or more keyword arguments from which to initialize '
-        'dictionary data.' ),
-]
-DictionaryPositionalArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.cabc.Mapping[ H, V ] | __.cabc.Iterable[ tuple[ H, V ] ],
-    __.ddoc.Doc(
-        'Zero or more iterables from which to initialize dictionary data. '
-        'Each iterable must be dictionary or sequence of key-value pairs. '
-        'Duplicate keys will result in an error.' ),
-]
-ExceptionInfo: __.typx.TypeAlias = tuple[
-    type[ BaseException ] | None,
-    BaseException | None,
-    __.types.TracebackType | None ]
-
-
-package_name = __name__.split( '.', maxsplit = 1 )[ 0 ]
+def install_builtin_safely(
+    alias: str, installee: __.typx.Any, errorclass: type[ Exception ]
+) -> None:
+    ''' Adds attribute to interpreter builtins, if absent. '''
+    import builtins
+    if hasattr( builtins, alias ): raise errorclass( builtins, alias )
+    setattr( builtins, alias, installee )

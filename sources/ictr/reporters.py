@@ -18,37 +18,39 @@
 #============================================================================#
 
 
-''' Common names and type aliases. '''
+''' Message reporters. '''
 
 
-from . import imports as __
+from . import __
+from . import configuration as _cfg
+from . import printers as _printers
 
 
-H = __.typx.TypeVar( 'H', bound = __.cabc.Hashable ) # Hash Key
-V = __.typx.TypeVar( 'V' ) # Value
+MessageSummary: __.typx.TypeAlias = str | Exception
+MessageDetail: __.typx.TypeAlias = str
 
 
-ComparisonResult: __.typx.TypeAlias = bool | __.types.NotImplementedType
-NominativeArguments: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
-PositionalArguments: __.typx.TypeAlias = __.cabc.Sequence[ __.typx.Any ]
+class Reporter( __.immut.DataclassObject ):
+    ''' Formats and prints messages to targets. '''
 
-DictionaryNominativeArgument: __.typx.TypeAlias = __.typx.Annotated[
-    V,
-    __.ddoc.Doc(
-        'Zero or more keyword arguments from which to initialize '
-        'dictionary data.' ),
-]
-DictionaryPositionalArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.cabc.Mapping[ H, V ] | __.cabc.Iterable[ tuple[ H, V ] ],
-    __.ddoc.Doc(
-        'Zero or more iterables from which to initialize dictionary data. '
-        'Each iterable must be dictionary or sequence of key-value pairs. '
-        'Duplicate keys will result in an error.' ),
-]
-ExceptionInfo: __.typx.TypeAlias = tuple[
-    type[ BaseException ] | None,
-    BaseException | None,
-    __.types.TracebackType | None ]
+    name: str
+    active: bool  # TODO? Also accept predicate function to decide if active.
+    flavor: _cfg.Flavor
+    formatter: _cfg.Formatter
+    printer: _printers.Printer
 
+    def __call__(
+        self, summary: MessageSummary, *details: MessageDetail
+    ) -> None:
+        # TODO? Return record.
+        if not self.active: return
+        # TODO: Produce record from arguments.
+        # TODO: Invoke formatter on record.
+        # TODO: Print formatted message.
 
-package_name = __name__.split( '.', maxsplit = 1 )[ 0 ]
+    # TODO: inscribe (same as __call__)
+    # TODO: inscribe_async
+    # TODO? inspect
+    # TODO? Ability to print stack traces either from current frame or from
+    #       supplied traceback. Maybe various modes, such as compact or
+    #       detailed (showing names and values of locals).

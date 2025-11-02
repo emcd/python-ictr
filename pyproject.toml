@@ -15,13 +15,20 @@ license = 'Apache-2.0'
 readme = { 'file' = 'README.rst', 'content-type' = 'text/x-rst' }
 requires-python = '>= 3.10'
 dependencies = [
-  'typing-extensions',
+  'absence ~= 1.1',
+  'accretive ~= 4.2',
+  # 'asttokens ~= 3.0',
+  'colorama', # TODO: Replace dependency with internal implementation.
+  'dynadoc ~= 1.4',
+  # 'executing ~= 2.2',
+  'frigid ~= 4.2',
+  'typing-extensions ~= 4.15',
   # --- BEGIN: Injected by Copier ---
   # --- END: Injected by Copier ---
 ]
 classifiers = [ # https://pypi.org/classifiers
   'Development Status :: 5 - Production/Stable',
-  #'Intended Audience :: Developers',
+  'Intended Audience :: Developers',
   'License :: OSI Approved :: Apache Software License',
   'Programming Language :: Python :: 3 :: Only',
   # --- BEGIN: Injected by Copier ---
@@ -33,10 +40,9 @@ classifiers = [ # https://pypi.org/classifiers
   'Programming Language :: Python :: Implementation :: CPython',
   'Programming Language :: Python :: Implementation :: PyPy',
   # --- END: Injected by Copier ---
-  #'Topic :: Software Development',
-  # TODO: Add classifiers as appropriate.
+  'Topic :: Software Development',
 ]
-keywords = [ ] # TODO: Add keywords.
+keywords = [ 'logging', 'debug', 'print', 'introspection' ]
 [[project.authors]]
 name = 'Eric McDonald'
 email = 'emcd@users.noreply.github.com'
@@ -89,7 +95,7 @@ strict-naming = false
 [tool.hatch.build.targets.wheel.sources]
 'sources/ictr' = 'ictr'
 # --- BEGIN: Injected by Copier ---
-# --- END: Injected by Copier --- 
+# --- END: Injected by Copier ---
 [tool.hatch.envs.default]
 python = '3.10'
 [tool.hatch.envs.develop]
@@ -258,7 +264,7 @@ markers = [
 [tool.ruff]
 #builtins = [ 'ic' ]
 cache-dir = '.auxiliary/caches/ruff'
-extend-exclude = [ 'vulturefood.py' ]
+extend-exclude = [ '.auxiliary/pocs', 'vulturefood.py' ]
 indent-width = 4
 line-length = 79
 [tool.ruff.lint]

@@ -18,37 +18,29 @@
 #============================================================================#
 
 
-''' Common names and type aliases. '''
+''' Inspection of variables as function arguments. '''
+
+# TODO: Implement if deeper inspection than f-string {name=} is needed.
 
 
-from . import imports as __
+# import executing as _executing
 
 
-H = __.typx.TypeVar( 'H', bound = __.cabc.Hashable ) # Hash Key
-V = __.typx.TypeVar( 'V' ) # Value
+from . import __
 
 
-ComparisonResult: __.typx.TypeAlias = bool | __.types.NotImplementedType
-NominativeArguments: __.typx.TypeAlias = __.cabc.Mapping[ str, __.typx.Any ]
-PositionalArguments: __.typx.TypeAlias = __.cabc.Sequence[ __.typx.Any ]
+class Inspection( __.immut.DataclassObject ):
+    ''' Result of variable inspection. '''
 
-DictionaryNominativeArgument: __.typx.TypeAlias = __.typx.Annotated[
-    V,
-    __.ddoc.Doc(
-        'Zero or more keyword arguments from which to initialize '
-        'dictionary data.' ),
-]
-DictionaryPositionalArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.cabc.Mapping[ H, V ] | __.cabc.Iterable[ tuple[ H, V ] ],
-    __.ddoc.Doc(
-        'Zero or more iterables from which to initialize dictionary data. '
-        'Each iterable must be dictionary or sequence of key-value pairs. '
-        'Duplicate keys will result in an error.' ),
-]
-ExceptionInfo: __.typx.TypeAlias = tuple[
-    type[ BaseException ] | None,
-    BaseException | None,
-    __.types.TracebackType | None ]
+    name: str
+    value: __.typx.Any
 
 
-package_name = __name__.split( '.', maxsplit = 1 )[ 0 ]
+Inspections: __.typx.TypeAlias = __.cabc.Sequence[ Inspection ]
+
+
+def inspect_variables( *variables: __.typx.Any ) -> Inspections:
+    ''' Returns values of variables with names and execution context. '''
+    inspections: list[ Inspection ] = [ ]
+    # TODO: Implement.
+    return tuple( inspections )
