@@ -22,35 +22,15 @@
 
 
 from . import __
-
-
-class FormatterControl( __.immut.DataclassObject ):
-    ''' Contextual data for formatter and prefix factories. '''
-
-    columns_count_effective: __.typx.Annotated[
-        __.typx.Optional[ int ],
-        __.typx.Doc(
-            ''' Available line length after accounting for embellishments.
-
-                May be ``None`` if indeterminable.
-            '''
-        ),
-    ] = None
-
-
-Flavor: __.typx.TypeAlias = int | str
-Formatter: __.typx.TypeAlias = __.typx.Callable[ [ __.typx.Any ], str ]
-FormatterFactory: __.typx.TypeAlias = (
-    __.typx.Callable[ [ FormatterControl, str, Flavor ], Formatter ] )
-PrefixEmitter: __.typx.TypeAlias = __.typx.Callable[ [ str, Flavor ], str ]
-PrefixEmitterUnion: __.typx.TypeAlias = str | PrefixEmitter
+from . import flavors as _flavors
+from . import textualizers as _texts
 
 
 class FlavorConfiguration( __.immut.DataclassObject ):
     ''' Per-flavor configuration. '''
 
-    formatter_factory: __.typx.Annotated[
-        __.typx.Optional[ FormatterFactory ],
+    textualizer_factory: __.typx.Annotated[
+        __.typx.Optional[ _texts.TextualizerFactory ],
         __.typx.Doc(
             ''' Factory which produces formatter callable.
 
@@ -68,32 +48,22 @@ class FlavorConfiguration( __.immut.DataclassObject ):
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
     ] = None
-    prefix_emitter: __.typx.Annotated[
-        __.typx.Optional[ PrefixEmitterUnion ],
-        __.typx.Doc(
-            ''' String or factory which produces output prefix string.
-
-                Factory takes formatter control, module name, and flavor as
-                arguments. Returns prefix string.
-
-                Default ``None`` inherits from cumulative configuration.
-            ''' ),
-    ] = None
 
 
 def produce_default_flavors( ) -> __.immut.Dictionary[
-    Flavor, FlavorConfiguration
+    _flavors.Flavor, FlavorConfiguration
 ]:
     ''' Produces flavors for trace depths 0 through 9. '''
     return __.immut.Dictionary( {
         i: FlavorConfiguration(
-            prefix_emitter = f"TRACE{i}| " ) for i in range( 10 ) } )
+            textualizer_factory = _produce_trace_textualizer_factory( i ) )
+                for i in range( 10 ) } )
 
 
 FlavorsRegistry: __.typx.TypeAlias = (
-    __.immut.Dictionary[ Flavor, FlavorConfiguration ] )
+    __.immut.Dictionary[ _flavors.Flavor, FlavorConfiguration ] )
 FlavorsRegistryLiberal: __.typx.TypeAlias = (
-    __.cabc.Mapping[ Flavor, FlavorConfiguration ] )
+    __.cabc.Mapping[ _flavors.Flavor, FlavorConfiguration ] )
 
 
 class ModuleConfiguration( __.immut.DataclassObject ):
@@ -104,8 +74,8 @@ class ModuleConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
     ] = __.dcls.field( default_factory = FlavorsRegistry )
-    formatter_factory: __.typx.Annotated[
-        __.typx.Optional[ FormatterFactory ],
+    textualizer_factory: __.typx.Annotated[
+        __.typx.Optional[ _texts.TextualizerFactory ],
         __.typx.Doc(
             ''' Factory which produces formatter callable.
 
@@ -119,17 +89,6 @@ class ModuleConfiguration( __.immut.DataclassObject ):
         __.typx.Optional[ bool ],
         __.typx.Doc(
             ''' Include stack frame with output?
-
-                Default ``None`` inherits from cumulative configuration.
-            ''' ),
-    ] = None
-    prefix_emitter: __.typx.Annotated[
-        __.typx.Optional[ PrefixEmitterUnion ],
-        __.typx.Doc(
-            ''' String or factory which produces output prefix string.
-
-                Factory takes formatter control, module name, and flavor as
-                arguments. Returns prefix string.
 
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
@@ -144,24 +103,24 @@ class DispatcherConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
     ] = __.dcls.field( default_factory = produce_default_flavors )
-    formatter_factory: __.typx.Annotated[
-        FormatterFactory,
+    textualizer_factory: __.typx.Annotated[
+        _texts.TextualizerFactory,
         __.typx.Doc(
             ''' Factory which produces formatter callable.
 
                 Takes formatter control, module name, and flavor as arguments.
                 Returns formatter to convert an argument to a string.
             ''' ),
-    ] = lambda ctrl, mname, flavor: __.pprint.pformat
+    # TODO: Assign a factory which utilizes record fields.
+    ] = lambda tcontrol, record: _texts.TextualizerDefault( )
     include_context: __.typx.Annotated[
         bool, __.typx.Doc( ''' Include stack frame with output? ''' )
     ] = False
-    prefix_emitter: __.typx.Annotated[
-        PrefixEmitterUnion,
-        __.typx.Doc(
-            ''' String or factory which produces output prefix string.
 
-                Factory takes formatter control, module name, and flavor as
-                arguments. Returns prefix string.
-            ''' ),
-    ] = 'ictr| '
+
+def _produce_trace_textualizer_factory(
+    level: int
+) -> _texts.TextualizerFactory:
+    return (
+        lambda tcontrol, record:
+        _texts.TextualizerDefault( prefix_emitter = f"TRACE{level}| " ) )

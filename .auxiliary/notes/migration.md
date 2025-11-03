@@ -2,7 +2,7 @@
 
 This document tracks the migration of code and concepts from `python-icecream-truck` (v1) to `python-ictr` (v2).
 
-**Last Updated**: 2025-11-01
+**Last Updated**: 2025-11-02
 
 ## Migration Status Overview
 
@@ -11,24 +11,24 @@ This document tracks the migration of code and concepts from `python-icecream-tr
 These files have been copied from ictruck to ictr and partially adapted for v2:
 
 1. **`sources/ictr/configuration.py`** (from `ictruck/configuration.py`)
-   - Status: Partially adapted
-   - Changes needed:
-     - Remove `_icecream` references (lines 155, 167)
-     - Update `FormatterControl` to match v2 design (needs columns_total, columns_after_prefix, prefer_compact, depth_max, length_max)
-     - Update `Formatter` signature from `Callable[[Any], str]` to `Callable[[Record], str]`
-     - Add `Record` and `RecordContent` classes (MessageContent, InspectionContent)
-     - Update `FlavorConfiguration` to add sundae fields (color, emoji, label, stack)
-     - Rename `VehicleConfiguration` to `DispatcherConfiguration` (partially done)
-     - Update factory signatures to match v2 design
+   - Status: ✅ Mostly complete, needs Sundae integration
+   - Completed:
+     - Renamed `VehicleConfiguration` → `DispatcherConfiguration`
+     - Moved `Flavor` type to `flavors.py` (broke circular dependency)
+     - Updated for v2 architecture
+   - Remaining:
+     - Add Sundae fields to `FlavorConfiguration` (color, emoji, label, stack)
+     - Update default values after Sundae migration
 
 2. **`sources/ictr/dispatchers.py`** (renamed from `vehicles.py`)
-   - Status: ✅ Renamed, partially adapted
-   - Changes needed:
-     - Remove all `_icecream.IceCreamDebugger` references
-     - Implement `Reporter` class with `__call__(summary, *details)` method
-     - Update `Dispatcher` to create and cache `Reporter` instances instead of IceCreamDebugger
-     - Update printer factory integration to pass Record to printers
-     - Remove `_calculate_ic_initargs` and replace with Reporter initialization
+   - Status: ✅ Complete, needs testing
+   - Completed:
+     - ✅ Renamed from `vehicles.py`
+     - ✅ Removed all `_icecream.IceCreamDebugger` references
+     - ✅ Updated `Dispatcher` to create and cache `Reporter` instances
+     - ✅ Updated printer factory integration for v2 Record-based pipeline
+     - ✅ Removed `_calculate_ic_initargs`
+     - ✅ Replaced `truck`/`Truck` references with `dispatcher`/`Dispatcher`
    - Note: `.inspect()` method **DEFERRED** - see decision log below
 
 3. **`sources/ictr/exceptions.py`** (from `ictruck/exceptions.py`)
@@ -40,52 +40,53 @@ These files have been copied from ictruck to ictr and partially adapted for v2:
      - `ModuleInferenceFailure` (RuntimeError)
    - `Omniexception` base class updated to use `frigid.immut.exceptions.Omniexception`
 
-4. **`sources/ictr/__/nomina.py`** (from `ictruck/__/nomina.py`)
-   - Status: Appears complete
-   - Changes needed: Review and confirm completeness
+4. **`sources/ictr/flavors.py`** (NEW - factored from configuration)
+   - Status: ✅ Complete
+   - Content:
+     - `Flavor` type alias (moved from `configuration.py`)
+     - Broke circular dependency between `configuration` and `printers`
 
-5. **`sources/ictr/__/imports.py`** (from `ictruck/__/imports.py`)
-   - Status: Partially adapted (missing many imports from v1)
-   - Changes needed:
-     - Add missing standard library imports (see v1 for full list)
-     - May need to add `executing` and `asttokens` imports
+5. **`sources/ictr/__/nomina.py`** (from `ictruck/__/nomina.py`)
+   - Status: ✅ Complete
+   - No changes needed
+
+6. **`sources/ictr/__/imports.py`** (from `ictruck/__/imports.py`)
+   - Status: ✅ Complete
+   - Updated with necessary imports for v2
 
 ### 🔄 Needs Migration (Direct or Adapted)
 
 #### Core Implementation Files
 
-6. **`sources/ictr/printers.py`** (from `ictruck/printers.py`)
-   - Priority: HIGH
-   - Status: Not started
-   - Adaptation needed:
-     - Update `Printer` signature from `Callable[[str], None]` to `Callable[[str, Record], None]`
-     - Keep decolorization logic (`_remove_ansi_c1_sequences`, `_simple_print`)
-     - Keep colorama integration for Windows
-     - Review if printer needs Record for routing/metadata decisions
+7. **`sources/ictr/printers.py`** (from `ictruck/printers.py`)
+   - Status: ✅ Complete
+   - Completed:
+     - ✅ Updated `Printer` protocol with new signature: `(record, text=None)`
+     - ✅ Added `provide_textualizer_control()` method to protocol
+     - ✅ Created `SimplePrinter` class (replaces `_simple_print` function)
+     - ✅ Created `TextualizerControl` class (replaces `FormatterControl`)
+     - ✅ Kept decolorization logic (`_remove_ansi_c1_sequences`)
+     - ✅ Kept colorama integration for Windows
+   - Key insight: Printer can return `None` from `provide_textualizer_control()` to indicate it doesn't support text (e.g., for structured logging, database, JSON)
 
-7. **`sources/ictr/__/miscellany.py`** (from `ictruck/__/miscellany.py`)
-   - Priority: MEDIUM
-   - Status: Not started
-   - Adaptation needed: Minimal, mainly `install_builtin_safely` utility
-   - Note: Current ictr lacks this utility but dispatchers.py may reference it
+8. **`sources/ictr/__/miscellany.py`** (from `ictruck/__/miscellany.py`)
+   - Status: ✅ Complete
+   - Utility functions ported as needed
 
-8. **`sources/ictr/__/validators.py`** (from `ictruck/__/validators.py`)
-   - Priority: MEDIUM
-   - Status: Not started
-   - Adaptation needed: Minimal, used for argument validation
-   - Note: dispatchers.py references `_validate_arguments`
+9. **`sources/ictr/__/validators.py`** (from `ictruck/__/validators.py`)
+   - Status: ✅ Complete
+   - Argument validation utilities ported
 
 #### New Files for v2
 
-9. **`sources/ictr/records.py`** (NEW)
-   - Priority: HIGH
-   - Content needed:
-     - `Record` dataclass (main record structure)
-     - `RecordContent` base class
-     - `MessageContent` dataclass (summary + details)
-     - `InspectionContent` dataclass (inspections with names)
-     - Polymorphic `format_body()` methods on content types
-   - Reference: `.auxiliary/notes/original/record-design.md`
+10. **`sources/ictr/records.py`** (NEW)
+    - Status: ✅ Complete
+    - Completed:
+      - ✅ `Record` dataclass (main record structure)
+      - ✅ `RecordContent` base class
+      - ✅ `MessageContent` dataclass (summary + details)
+      - ✅ `MessageSummary` and `MessageDetail` type aliases
+    - Note: InspectionContent deferred (see decision log)
 
 10. **`sources/ictr/inspection.py`** (NEW)
     - Priority: HIGH
@@ -99,42 +100,60 @@ These files have been copied from ictruck to ictr and partially adapted for v2:
       - `.auxiliary/notes/original/executing.md`
       - `python-icecream-truck/.auxiliary/scribbles/inspect_prototype.py`
 
-11. **`sources/ictr/formatters.py`** (NEW, adapted from recipes)
-    - Priority: HIGH
-    - Content needed:
-      - Default formatter implementation
-      - Value formatting utilities (pretty-print for complex types)
-      - Prefix emission logic (templates with interpolants)
-      - Rich formatting integration
-      - Exception/traceback formatting
-      - Context frame formatting
-    - References to adapt from:
-      - `ictruck/recipes/sundae.py` (prefix templates, emoji, colors)
-      - `ictruck/recipes/rich.py` (rich formatting)
-      - Design: `.auxiliary/notes/original/ictr-v2-design.md` sections on formatting
+11. **`sources/ictr/textualizers.py`** (NEW, replaces formatters)
+    - Status: 🔄 In progress
+    - Priority: **NEXT - HIGH**
+    - Completed:
+      - ✅ Renamed from "formatters" to "textualizers"
+      - ✅ `Textualizer` protocol defined
+      - ✅ `TextualizerDefault` stub created
+      - ✅ `PrefixEmitter` type aliases defined
+    - Remaining:
+      - ⏸️ Implement `TextualizerDefault.__call__()`
+      - ⏸️ Implement prefix rendering (will use data from Sundae)
+      - ⏸️ Implement body rendering
+      - ⏸️ Implement frame composition (multiline, wrapping)
+    - Key design decision: **Merge prefix generation into textualizer** (not separate)
+    - References:
+      - `ictruck/recipes/sundae.py` for prefix templates and interpolation
+      - `.auxiliary/notes/original/ictr-v2-design.md` for formatting specs
 
-12. **`sources/ictr/reporters.py`** (NEW or merge into dispatchers.py)
-    - Priority: HIGH
-    - Status: In progress (user implementing)
-    - Content needed:
-      - `Reporter` class with proper v2 API
-      - `__call__(summary, *details)` method (normal mode)
-      - Pre-resolved configuration storage
-      - Pre-calculated enabled flag
-      - Exception autocapture for errorx/abortx
+12. **`sources/ictr/reporters.py`** (NEW, separate module)
+    - Status: ✅ Complete
+    - Completed:
+      - ✅ `Reporter` class with v2 API
+      - ✅ `__call__(summary, *details)` method (normal mode)
+      - ✅ Pre-resolved configuration (active flag, flavor, textualizer, printer)
+      - ✅ Conditional textualization based on `provide_textualizer_control()`
+      - ✅ Clean integration with Record-based pipeline
     - Note: `.inspect(*variables)` method **DEFERRED** (see decision log)
-    - Decision: Likely to merge into dispatchers.py for cohesion
+    - Note: Exception autocapture for errorx/abortx **TODO**
 
 #### Reference/Recipe Files (Adapt for Formatters)
 
-13. **Review `ictruck/recipes/sundae.py`**
-    - Priority: MEDIUM
-    - Purpose: Extract prefix templates, flavor definitions, emoji/color configs
-    - Content to adapt:
+13. **Migrate Sundae Recipe → `sources/ictr/standard/` subpackage**
+    - Status: 🔄 Not started
+    - Priority: **NEXT - HIGH**
+    - Plan: Create `standard` subpackage with Sundae functionality
+    - Content to migrate:
       - Pre-defined flavors (note, monition, error, errorx, abort, abortx, future, success)
-      - Prefix template system with interpolants
-      - Emoji and color configurations
-      - Style definitions
+      - Flavor specifications (color, emoji, label, stack)
+      - Prefix template system with interpolants (flavor, timestamp, module, PID, thread)
+      - Trace level color gradients
+      - `Auxiliaries` pattern for dependency injection
+      - `PrefixFormatControl` (integrate with TextualizerControl)
+    - Structure:
+      ```
+      sources/ictr/standard/
+        __init__.py
+        flavors.py      # Pre-defined flavor specs
+        textualizers.py # Sundae textualizer implementation
+      ```
+    - Integration points:
+      - `FlavorConfiguration` gets sundae fields (color, emoji, label, stack)
+      - Default textualizer uses Sundae prefix rendering
+      - Can register standard flavors at module load
+    - Reference: `ictruck/recipes/sundae.py`
 
 14. **Review `ictruck/recipes/rich.py`**
     - Priority: LOW (mostly subset of Sundae)
@@ -167,40 +186,36 @@ These are v1-specific and replaced by v2 design:
 - `IceCreamDebugger` instances (replaced by Reporter)
 - Old two-stage formatting approach (replaced by Record-based pipeline)
 
-## Migration Priorities
+## Current Status Summary
 
-### Phase 1: Core Infrastructure (BLOCKING)
-Must be done before any functionality works:
+### ✅ Phase 1: Core Infrastructure - **COMPLETE**
+- ✅ Configuration updated for v2
+- ✅ Records module with Record and MessageContent
+- ✅ Printers updated with v2 signatures
+- ✅ Utilities migrated (__/miscellany, __/validators)
+- ✅ Flavors module factored out
 
-1. Complete `configuration.py` updates (remove icecream, add Record)
-2. Create `records.py` with Record and content classes
-3. Create `inspection.py` from prototype
-4. Migrate `printers.py` with updated signatures
-5. Migrate `__/miscellany.py` and `__/validators.py`
+### ✅ Phase 2: Reporter & Dispatcher - **COMPLETE**
+- ✅ Reporter class implemented
+- ✅ Dispatcher updated to vend Reporters
+- ✅ Record-based pipeline working
+- ✅ Conditional textualization based on printer capability
 
-### Phase 2: Reporter Implementation (HIGH PRIORITY)
-Core v2 functionality:
+### 🔄 Phase 3: Textualization - **IN PROGRESS**
+Current priorities:
+1. **Implement TextualizerDefault** (HIGH - NEXT)
+   - Prefix rendering
+   - Body rendering
+   - Frame composition
+2. **Migrate Sundae to `standard/` subpackage** (HIGH - NEXT)
+   - Extract flavor definitions
+   - Implement prefix templates with interpolation
+   - Set up standard flavors registry
 
-6. Create/update `Reporter` class in `vehicles.py`
-7. Update `Dispatcher` to vend Reporters
-8. Integrate inspection into Reporter.inspect()
-9. Implement Record creation in both Reporter modes
-
-### Phase 3: Formatting (HIGH PRIORITY)
-Make output readable:
-
-10. Create `formatters.py` with basic formatter
-11. Adapt prefix templates from sundae recipe
-12. Add rich formatting support
-13. Implement polymorphic content formatting
-
-### Phase 4: Polish (MEDIUM PRIORITY)
-Complete the system:
-
-14. Add pre-defined flavors (sundae-style)
-15. Add exception/traceback formatting
-16. Port tests from prototypes
-17. Update README and documentation
+### ⏸️ Phase 4: Polish - **DEFERRED**
+- Add exception/traceback formatting
+- Port tests from prototypes
+- Update README and documentation
 
 ## Key Design Differences to Remember
 
@@ -270,6 +285,36 @@ Before starting implementation, review these in detail:
 **Only Difference**: Separator character (`=` vs `:`) and automatic extraction vs manual `{=}`
 
 **Future Consideration**: If implementing later, investigate what additional metadata `executing`/`asttokens` can provide to justify the dependencies.
+
+### Decision 4: Merge Prefix Generation into Textualizer
+**Date**: 2025-11-02
+**Decision**: Prefix rendering is part of textualizer, not a separate PrefixEmitter
+**Rationale**:
+- In v1, separation was forced by IceCreamDebugger's structure (external constraint)
+- In v2, textualizer owns the entire message frame (prefix + body)
+- Better cohesion: prefix and body interact (wrapping, alignment, multiline)
+- Simpler architecture: one component, clear responsibility
+- More flexible: holistic formatting decisions
+
+**Implementation**:
+- `Textualizer._render_prefix()` - internal method for prefix
+- `FlavorConfiguration` stores prefix **data** (template, colors, etc.), not callables
+- Sundae prefix logic becomes part of standard textualizer
+
+### Decision 5: Printer Opt-Out of Textualization
+**Date**: 2025-11-02
+**Decision**: Printer can return `None` from `provide_textualizer_control()` to skip textualization
+**Rationale**:
+- Supports structured logging (JSON, database, metrics) efficiently
+- Avoids expensive formatting when not needed
+- Per-flavor control via configuration
+- Clean contract: printer receives both `text` and `record`, uses what it needs
+
+**Implementation**:
+- `Printer.provide_textualizer_control()` returns `Optional[TextualizerControl]`
+- `None` = skip textualization (structured output)
+- `TextualizerControl(...)` = enable textualization (text output)
+- Reporter checks return value before calling textualizer
 
 ## Questions to Resolve
 

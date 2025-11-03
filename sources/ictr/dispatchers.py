@@ -24,16 +24,24 @@
 from . import __
 from . import configuration as _cfg
 from . import exceptions as _exceptions
+from . import flavors as _flavors
 from . import printers as _printers
 from . import reporters as _reporters
+from . import textualizers as _texts
 
 
 _installer_mutex: __.threads.Lock = __.threads.Lock( )
 _registrar_mutex: __.threads.Lock = __.threads.Lock( )
 _self_modulecfg: _cfg.ModuleConfiguration = _cfg.ModuleConfiguration(
     flavors = __.immut.Dictionary(
-        note = _cfg.FlavorConfiguration( prefix_emitter = 'NOTE| ' ),
-        error = _cfg.FlavorConfiguration( prefix_emitter = 'ERROR| ' ) ) )
+        note = _cfg.FlavorConfiguration(
+            textualizer_factory = (
+                lambda tcontrol, record: _texts.TextualizerDefault(
+                    prefix_emitter = 'NOTE| ' ) ) ),
+        error = _cfg.FlavorConfiguration(
+            textualizer_factory = (
+                lambda tcontrol, record: _texts.TextualizerDefault(
+                    prefix_emitter = 'ERROR| ' ) ) ) ) )
 _validate_arguments = (
     __.validate_arguments(
         globalvars = globals( ),
@@ -62,11 +70,11 @@ class Omniflavor( __.enum.Enum ):
     Instance = __.enum.auto( )
 
 
-ActiveFlavors: __.typx.TypeAlias = Omniflavor | frozenset[ _cfg.Flavor ]
+ActiveFlavors: __.typx.TypeAlias = Omniflavor | frozenset[ _flavors.Flavor ]
 ActiveFlavorsLiberal: __.typx.TypeAlias = __.typx.Union[
     Omniflavor,
-    __.cabc.Sequence[ _cfg.Flavor ],
-    __.cabc.Set[ _cfg.Flavor ],
+    __.cabc.Sequence[ _flavors.Flavor ],
+    __.cabc.Set[ _flavors.Flavor ],
 ]
 ActiveFlavorsRegistry: __.typx.TypeAlias = (
     __.immut.Dictionary[ str | None, ActiveFlavors ] )
@@ -75,7 +83,8 @@ ActiveFlavorsRegistryLiberal: __.typx.TypeAlias = (
 ModulesConfigurationsRegistryLiberal: __.typx.TypeAlias = (
     __.cabc.Mapping[ str, _cfg.ModuleConfiguration ] )
 ReportersRegistry: __.typx.TypeAlias = (
-    __.accret.Dictionary[ tuple[ str, _cfg.Flavor ], _reporters.Reporter ] )
+    __.accret.Dictionary[
+        tuple[ str, _flavors.Flavor ], _reporters.Reporter ] )
 TraceLevelsRegistry: __.typx.TypeAlias = (
     __.immut.Dictionary[ str | None, int ] )
 TraceLevelsRegistryLiberal: __.typx.TypeAlias = (
@@ -160,7 +169,7 @@ class Dispatcher( __.immut.DataclassObject ):
     @_validate_arguments
     def __call__(
         self,
-        flavor: _cfg.Flavor, *,
+        flavor: _flavors.Flavor, *,
         module_name: __.Absential[ str ] = __.absent,
     ) -> _reporters.Reporter:
         ''' Produces and caches message reporter. '''
@@ -172,7 +181,7 @@ class Dispatcher( __.immut.DataclassObject ):
             with self.reporters_mutex:
                 return self.reporters[ cache_index ]
         configuration = _produce_ic_configuration( self, mname, flavor )
-        control = _cfg.FormatterControl( )
+        control = _printers.TextualizerControl( )
         if isinstance( flavor, int ):
             trace_level = (
                 _calculate_effective_trace_level( self.trace_levels, mname) )
@@ -187,8 +196,8 @@ class Dispatcher( __.immut.DataclassObject ):
             control, mname, flavor )
         printer = _resolve_printer( self, mname, flavor )
         reporter = _reporters.Reporter(
-            name = mname, active = active, flavor = flavor,
-            formatter = formatter, printer = printer )
+            active = active, address = mname, flavor = flavor,
+            textualizer = formatter, printer = printer )
         with self.reporters_mutex:
             self.reporters[ cache_index ] = reporter
         return reporter
@@ -281,7 +290,7 @@ FlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.typx.Doc( ''' Registry of flavor identifiers to configurations. ''' ),
 ]
 FormatterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ _cfg.FormatterFactory ],
+    __.Absential[ _texts.TextualizerFactory ],
     __.typx.Doc(
         ''' Factory which produces formatter callable.
 
@@ -324,7 +333,7 @@ ModulecfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' ),
 ]
 PrefixEmitterArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ _cfg.PrefixEmitterUnion ],
+    __.Absential[ _texts.PrefixEmitterUnion ],
     __.typx.Doc(
         ''' String or factory which produces output prefix string.
 
@@ -627,7 +636,7 @@ def _merge_ic_configuration(
 
 
 def _produce_ic_configuration(
-    vehicle: Dispatcher, mname: str, flavor: _cfg.Flavor
+    vehicle: Dispatcher, mname: str, flavor: _flavors.Flavor
 ) -> __.immut.Dictionary[ str, __.typx.Any ]:
     fconfigs: list[ _cfg.FlavorConfiguration ] = [ ]
     vconfig = vehicle.generalcfg
@@ -652,8 +661,8 @@ def _produce_ic_configuration(
 
 
 def _resolve_printer(
-    dispatcher: Dispatcher, mname: str, flavor: _cfg.Flavor
+    dispatcher: Dispatcher, mname: str, flavor: _flavors.Flavor
 ) -> _printers.Printer:
     if isinstance( dispatcher.printer_factory, __.io.TextIOBase ):
-        return __.funct.partial( print, file = dispatcher.printer_factory )
+        return _printers.SimplePrinter( target = dispatcher.printer_factory )
     return dispatcher.printer_factory( mname, flavor )

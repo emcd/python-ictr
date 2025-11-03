@@ -18,46 +18,51 @@
 #============================================================================#
 
 
-''' Message reporters. '''
+''' Formatters, formatter factories, and auxiliary functions and types. '''
 
 
 from . import __
 from . import flavors as _flavors
 from . import printers as _printers
 from . import records as _records
-from . import textualizers as _texts
 
 
-class Reporter( __.immut.DataclassObject ):
-    ''' Formats and prints messages to targets. '''
+PrefixEmitter: __.typx.TypeAlias = (
+    __.typx.Callable[ [ str, _flavors.Flavor ], str ] )
+PrefixEmitterUnion: __.typx.TypeAlias = str | PrefixEmitter
 
-    active: bool  # TODO? Also accept predicate function to decide if active.
-    address: str
-    flavor: _flavors.Flavor
-    textualizer: _texts.Textualizer
-    printer: _printers.Printer
+
+class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
+    ''' Abstract base class for textualizers. '''
+
+    @__.abc.abstractmethod
+    def __call__(
+        self, control: _printers.TextualizerControl, record: _records.Record
+    ) -> str:
+        ''' Renders a record as text. '''
+        raise NotImplementedError
+
+
+class TextualizerDefault( Textualizer ):
+    ''' Simple textualizer. '''
+
+    prefix_emitter: __.typx.Annotated[
+        PrefixEmitterUnion,
+        __.typx.Doc(
+            ''' String or factory which produces output prefix string.
+
+                Factory takes control object and record as arguments.
+                Returns prefix string.
+            ''' ),
+    ] = 'ictr| '
 
     def __call__(
-        self,
-        summary: _records.MessageSummary, /,
-        *details: _records.MessageDetail,
-    ) -> None:
-        # TODO? Return record.
-        ''' Prepares record and prints it. '''
-        if not self.active: return
-        content = _records.MessageContent(
-            summary = summary, details = details )
-        record = _records.Record(
-            address = self.address, content = content, flavor = self.flavor )
-        tcontrol = self.printer.provide_textualizer_control( )
-        text = (
-            None if tcontrol is None
-            else self.textualizer( tcontrol, record ) )
-        self.printer( record, text )
+        self, control: _printers.TextualizerControl, record: _records.Record
+    ) -> str:
+        # TODO: Implement.
+        return ''
 
-    # TODO: inscribe (same as __call__)
-    # TODO: inscribe_async
-    # TODO? inspect
-    # TODO? Ability to print stack traces either from current frame or from
-    #       supplied traceback. Maybe various modes, such as compact or
-    #       detailed (showing names and values of locals).
+
+TextualizerFactory: __.typx.TypeAlias = (
+    __.typx.Callable[
+        [ _printers.TextualizerControl, _records.Record ], Textualizer ] )

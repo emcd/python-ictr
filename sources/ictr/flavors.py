@@ -18,34 +18,10 @@
 #============================================================================#
 
 
-''' Common imports used throughout the package. '''
-
-# ruff: noqa: F401
+''' Reporter flavors. '''
 
 
-import                      abc
-import collections.abc as   cabc
-import dataclasses as       dcls
-import                      enum
-import functools as         funct
-import                      inspect
-import                      io
-import itertools as         itert
-import                      os
-import                      pprint
-import                      re
-import                      sys
-import threading as         threads
-import                      types
-import                      warnings
+from . import __
 
-from datetime import datetime as Datetime, timezone as Timezone
 
-import accretive as         accret
-import dynadoc as           ddoc
-import frigid as            immut
-import typing_extensions as typx
-# --- BEGIN: Injected by Copier ---
-# --- END: Injected by Copier ---
-
-from absence import Absential, absent, is_absent
+Flavor: __.typx.TypeAlias = int | str

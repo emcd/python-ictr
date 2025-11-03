@@ -15,3 +15,8 @@ inspect_variables
 variables
 details
 summary
+textualizer_factory
+charset
+columns_count
+ctime
+__call__

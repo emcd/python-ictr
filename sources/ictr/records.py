@@ -18,46 +18,36 @@
 #============================================================================#
 
 
-''' Message reporters. '''
+''' Records to inscribe. '''
 
 
 from . import __
 from . import flavors as _flavors
-from . import printers as _printers
-from . import records as _records
-from . import textualizers as _texts
 
 
-class Reporter( __.immut.DataclassObject ):
-    ''' Formats and prints messages to targets. '''
+MessageDetail: __.typx.TypeAlias = str
+MessageDetails: __.typx.TypeAlias = tuple[ MessageDetail, ... ]
+MessageSummary: __.typx.TypeAlias = str | Exception
 
-    active: bool  # TODO? Also accept predicate function to decide if active.
+
+class Content( __.immut.DataclassObject ):
+    ''' Abstract base class for content. '''
+
+
+class MessageContent( Content ):
+    ''' Content for standard messages. '''
+
+    summary: MessageSummary
+    details: MessageDetails
+
+
+class Record( __.immut.DataclassObject ):
+    ''' Content with metadata. '''
+
     address: str
+    content: Content
     flavor: _flavors.Flavor
-    textualizer: _texts.Textualizer
-    printer: _printers.Printer
-
-    def __call__(
-        self,
-        summary: _records.MessageSummary, /,
-        *details: _records.MessageDetail,
-    ) -> None:
-        # TODO? Return record.
-        ''' Prepares record and prints it. '''
-        if not self.active: return
-        content = _records.MessageContent(
-            summary = summary, details = details )
-        record = _records.Record(
-            address = self.address, content = content, flavor = self.flavor )
-        tcontrol = self.printer.provide_textualizer_control( )
-        text = (
-            None if tcontrol is None
-            else self.textualizer( tcontrol, record ) )
-        self.printer( record, text )
-
-    # TODO: inscribe (same as __call__)
-    # TODO: inscribe_async
-    # TODO? inspect
-    # TODO? Ability to print stack traces either from current frame or from
-    #       supplied traceback. Maybe various modes, such as compact or
-    #       detailed (showing names and values of locals).
+    # TODO? 'ttl' for printing to other reporters
+    ctime: __.Datetime = __.dcls.field(
+        default_factory = lambda: __.Datetime.now( __.Timezone.utc ) )
+    # TODO? 'excinfo' (exception info)
