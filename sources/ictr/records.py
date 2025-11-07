@@ -27,7 +27,7 @@ from . import flavors as _flavors
 
 MessageDetail: __.typx.TypeAlias = str
 MessageDetails: __.typx.TypeAlias = tuple[ MessageDetail, ... ]
-MessageSummary: __.typx.TypeAlias = str | Exception
+MessageSummary: __.typx.TypeAlias = str | BaseException
 
 
 class Content( __.immut.DataclassObject ):

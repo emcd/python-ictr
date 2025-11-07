@@ -87,7 +87,7 @@ class SimplePrinter( Printer ):
     ) -> None:
         if text is None: text = str( record )  # Fallback
         if not self.force_color and not self.target.isatty( ):
-            text = _remove_ansi_c1_sequences( text )
+            text = remove_ansi_c1_sequences( text )
         print( text, file = self.target )
 
     def provide_textualizer_control(
@@ -121,7 +121,7 @@ def produce_simple_printer(
         target = target_, force_color = force_color ) # pyright: ignore
 
 
-def _remove_ansi_c1_sequences( text: str ) -> str:
+def remove_ansi_c1_sequences( text: str ) -> str:
     # https://stackoverflow.com/a/14693789/14833542
     regex = __.re.compile( r'''\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])''' )
     return regex.sub( '', text )
