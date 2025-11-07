@@ -45,6 +45,7 @@ import accretive as         accret
 import dynadoc as           ddoc
 import frigid as            immut
 import typing_extensions as typx
+import                      wcwidth
 # --- BEGIN: Injected by Copier ---
 # --- END: Injected by Copier ---
 

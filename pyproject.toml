@@ -23,6 +23,7 @@ dependencies = [
   # 'executing ~= 2.2',
   'frigid ~= 4.2',
   'typing-extensions ~= 4.15',
+  'wcwidth ~= 0.2.14',
   # --- BEGIN: Injected by Copier ---
   # --- END: Injected by Copier ---
 ]

@@ -1,12 +1,15 @@
 # Textualizer Implementation Design
 
-**Last Updated**: 2025-11-03
+**Last Updated**: 2025-11-06
 
 This document captures the design decisions, rationale, and implementation details for the textualizer system in ictr v2.
 
 ## Overview
 
-Textualizers are responsible for converting `Record` objects into formatted text strings suitable for display on text terminals or log files. The textualizer owns the entire message frame composition, including prefix generation and body rendering.
+Textualizers are responsible for converting `Record` objects into formatted
+text strings suitable for display on text terminals or log files. The
+textualizer owns the entire message frame composition, including prefix
+generation and body rendering.
 
 ## Architecture Decision: Prefix Integration
 
@@ -26,111 +29,137 @@ Textualizers are responsible for converting `Record` objects into formatted text
 
 ## TextualizerDefault - Simple Implementation
 
-The default textualizer provides straightforward text rendering without external dependencies (beyond stdlib). It makes simplifying assumptions suitable for basic use cases.
+The default textualizer provides straightforward text rendering with minimal dependencies. Uses ANSI-stripping for width calculation and optional `wcwidth` for Unicode support.
 
 ### Design Principles
 
-1. **Minimal dependencies**: No third-party packages (textwrap from stdlib is fine)
-2. **ASCII-focused**: Assumes "unadorned" ASCII text in messages for width calculations
-3. **Configurable behavior**: Attributes control wrapping, spacing, and formatting details
-4. **Graceful degradation**: Handles edge cases (no terminal width, very narrow terminals, etc.)
+1. **Minimal dependencies**: `wcwidth` (optional, for Unicode width), `textwrap` (stdlib)
+2. **ANSI-aware**: Strips ANSI escape sequences for accurate visual width calculation
+3. **Configurable behavior**: Enum-based configuration for precise control
+4. **Graceful degradation**: Handles edge cases (no terminal width, very narrow terminals)
 
-### Configuration Attributes
+### Implementation Status
+
+**Current** (2025-11-06):
+- ✅ Configuration structure (`TextualizerConfiguration` + `TextualizerDefault`)
+- ✅ `PrefixEmission` dataclass (text + visual width)
+- ✅ Prefix rendering with emission metadata
+- ✅ Summary rendering (initial line, core extraction)
+- 🚧 Summary subsequent lines (wrapping logic) - in progress
+- 🚧 Details rendering - TODO
+- 🚧 Exception group handling - TODO
+- 🚧 Visual width calculation utility - TODO
+
+### Configuration Structure
+
+Configuration extracted into separate `TextualizerConfiguration` dataclass:
 
 ```python
-class TextualizerDefault( Textualizer ):
-    ''' Simple textualizer for basic text output. '''
+@__.immut.dataclass
+class TextualizerConfiguration:
+    ''' Configuration for textualizer behavior. '''
 
-    prefix_emitter: PrefixEmitterUnion = 'ictr| '
+    # Column constraints
+    columns_constraint: ColumnsConstraints = ColumnsConstraints.Continue
+    columns_count: Optional[int] = None
 
-    # Wrapping behavior
-    wrap_text: bool = True
-    wrap_at_words: bool = True  # True = word boundaries, False = hard wrap
+    # Prefix and indentation
+    base_prefix: str = ''
 
-    # Spacing and separators
-    detail_separator: str = '\n\n'  # Between each detail
-    detail_marker: str = ''  # Optional prefix for details (e.g., '• ', '- ')
-
-    # Overflow handling
-    combined_overflow_threshold: float = 0.8  # Fraction of width triggering separation
+    # Detail formatting
+    detail_prefix: str = ''
+    details_separator: str = '\n\n'
+    details_max: Optional[int] = None  # Truncation limit
 
     # Exception formatting
-    exception_include_type: bool = True  # "ValueError: msg" vs just "msg"
+    exception_format: str = '[{name}] {message}'
 
-    # Truncation
-    max_detail_lines: Optional[int] = None  # Truncate long details (None = no limit)
+    # Wrapping behavior
+    incision_boundary: IncisionBoundaries = IncisionBoundaries.Wordsplits
+    prefix_incision_ratio: float = 0.3
 
-    # Fallback behavior
-    fallback_width: Optional[int] = None  # Width when columns_count is None
+@__.immut.dataclass
+class TextualizerDefault( Textualizer ):
+    ''' Simple textualizer with minimal dependencies. '''
+
+    configuration: TextualizerConfiguration = __.dcls.field(
+        default_factory = TextualizerConfiguration )
+    prefix_emitter: PrefixEmitterUnion = 'ictr| '
 ```
 
-#### Attribute Details
+### Configuration Enums
+
+**`ColumnsConstraints`** - How to handle column width limits:
+- `Continue` - Ignore width, output on single lines (no wrapping)
+- `Complect` - Fold/wrap text to fit within width
+- `Truncate` - Cut text at width boundary
+
+**`IncisionBoundaries`** - Where to break lines when wrapping:
+- `Anywhere` - Break at any character (hard wrap)
+- `Wordsplits` - Break at word boundaries (default)
+- `Whitespace` - Break only at whitespace
+
+### Key Attributes
 
 **`prefix_emitter: PrefixEmitterUnion`**
 - String literal or callable that produces prefix
-- Default: `'ictr| '`
-- Callable signature: `(mname: str, flavor: Flavor) -> str`
-- Allows customization without subclassing
+- Callable signature: `(control: TextualizerControl, record: Record) -> str`
+- Much better than original `(mname: str, flavor: Flavor)` - full context access
 
-**`wrap_text: bool`**
-- Master switch for wrapping behavior
-- `True` (default): Wrap text to fit terminal width
-- `False`: Output everything on single lines regardless of width
-- Useful for logs that will be post-processed or piped
+**`prefix_incision_ratio: float`**
+- Fraction of width (0.0-1.0) - if prefix exceeds this, put summary on new line
+- Default: `0.3` (30% of width)
+- Better than `combined_overflow_threshold` - more intuitive
 
-**`wrap_at_words: bool`**
-- Controls word-boundary vs character-boundary wrapping
-- `True` (default): Uses `textwrap` module for clean breaks
-- `False`: Simple string slicing, faster but can break mid-word
+**`exception_format: str`**
+- Template string with `{name}` and `{message}` placeholders
+- Default: `'[{name}] {message}'`
+- Flexible: `'{message}'` (untyped), `'{name}: {message}'` (Python-style), etc.
+- Much better than `exception_include_type: bool`
 
-**`detail_separator: str`**
-- How to separate multiple details
-- Default: `'\n\n'` (blank line between details)
-- Alternatives: `'\n'` (compact), `'\n---\n'` (visual divider)
-
-**`detail_marker: str`**
-- Prepended to first line of each detail (after indent)
-- Default: `''` (no marker, clean look)
-- Examples: `'• '`, `'- '`, `'→ '` for bulleted lists
-- Applied to first line only, not to wrapped continuation lines
-
-**`combined_overflow_threshold: float`**
-- Fraction of terminal width (0.0 to 1.0)
-- If `len(prefix) + len(summary) > width * threshold`, put summary on new line
-- Default: `0.8` (leaves breathing room)
-- `1.0`: Only separate when they literally don't fit together
-- Prevents cramped appearance when prefix+summary are close to width limit
-
-**`exception_include_type: bool`**
-- When `MessageSummary` is an `Exception`:
-  - `True` (default): `"ValueError: invalid input"`
-  - `False`: `"invalid input"`
-- Most users expect to see exception type
-
-**`max_detail_lines: Optional[int]`**
-- Maximum lines to render per detail
-- `None` (default): No truncation
-- Protects against accidentally logging huge objects
-- Truncation happens at textualizer level (can insert "... truncated" message)
-- Printer-level truncation would be awkward (mid-frame cuts)
-
-**`fallback_width: Optional[int]`**
-- Width to assume when `control.columns_count is None`
-- `None` (default): Don't wrap, output as single lines
-- Numeric values (80, 120, etc.): Assume this width for wrapping
-- Useful for non-TTY contexts where readable output still desired
+**`details_separator: str`**
+- Separator between summary and first detail, and between subsequent details
+- Default: `'\n\n'` (blank line)
+- Intentionally consistent (not different separator for first vs subsequent)
 
 ### Visual Width Calculation
 
-For the simple/default implementation, we use **character count** rather than true visual width. This means:
+**Decision**: Use regex-based ANSI stripping + optional `wcwidth` for Unicode.
 
-- ANSI color codes are counted in the length (not ideal but acceptable for default)
-- Unicode combining characters not handled specially
-- Emoji and wide characters treated as single width
+**Implementation approach**:
+- Regex pattern to strip ANSI escape sequences: `\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`
+- Then measure remaining text with `len()` or `wcwidth.wcswidth()` if available
+- No Rich dependency for default textualizer (save for `standard/` subpackage)
 
-**Rationale**: Keeps implementation simple and avoids dependencies. The `standard` subpackage textualizer (Sundae port) will handle this properly using Rich's width calculation or dedicated libraries.
+**Benefits**:
+- Handles ANSI color codes correctly (common in prefixes)
+- Lightweight `wcwidth` package (single file, no dependencies) handles Unicode width
+- No external dependencies if `wcwidth` unavailable (falls back to simple `len()`)
 
-**Known limitation**: If prefix contains ANSI codes, indentation may be slightly off-center. Acceptable for default implementation.
+**Known edge cases**:
+- CSI ED/EL sequences (clear display/line): Matched by regex but may have unusual semantics if embedded mid-string (very rare in logging)
+- Without `wcwidth`: Emoji and wide characters counted as single width (acceptable fallback)
+
+**Utility function** (to be implemented):
+```python
+import re as _re
+
+_ANSI_ESCAPE_PATTERN = _re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
+def _calculate_visual_width(text: str) -> int:
+    """Calculate visual width excluding ANSI sequences.
+
+    Uses wcwidth if available for proper Unicode width handling.
+    Falls back to len() for simple character counting.
+    """
+    stripped = _ANSI_ESCAPE_PATTERN.sub('', text)
+    try:
+        import wcwidth
+        width = wcwidth.wcswidth(stripped)
+        return width if width >= 0 else len(stripped)
+    except ImportError:
+        return len(stripped)
+```
 
 ### Exception Group Handling
 
@@ -221,205 +250,40 @@ def expand_exception_group(
 
 This allows callers to pre-process exception groups if they want different behavior than the textualizer's default.
 
-### Implementation Sketch
+### Current Implementation Structure
+
+The implementation in `sources/ictr/textualizers.py` follows this structure:
 
 ```python
 def __call__(
     self, control: _printers.TextualizerControl, record: _records.Record
 ) -> str:
     """Renders a record as formatted text."""
-    content = record.content
+    configuration = self.configuration
 
-    # Determine effective width
-    width = control.columns_count or self.fallback_width
+    # Render prefix with visual width metadata
+    prefix = self._render_prefix(control, record)
 
-    # Render prefix
-    prefix = self._render_prefix(record)
-    prefix_len = len(prefix)  # Character count (simple implementation)
+    # Render summary (initial + subsequent lines)
+    summary_initial = self._render_summary_initial(
+        configuration, prefix, record.content.summary)
+    summary_subsequent = self._render_summary_subsequent(
+        configuration, prefix, record.content.summary)
 
-    # Handle exception groups
-    if isinstance(content.summary, BaseExceptionGroup):
-        summary_text = self._render_exception_group_summary(content.summary)
-        group_details = self._extract_exception_group_details(content.summary)
-        all_details = group_details + list(content.details)
-    else:
-        summary_text = self._render_summary(content.summary)
-        all_details = list(content.details)
+    # Render details (TODO)
+    details = self._render_details(
+        configuration, prefix, record.content.details)
 
-    # Check if we need to separate prefix and summary
-    needs_separation = False
-    if width and self.wrap_text:
-        combined_len = prefix_len + len(summary_text)
-        threshold_len = int(width * self.combined_overflow_threshold)
-        needs_separation = combined_len > threshold_len
-
-    # Render summary lines
-    if needs_separation:
-        # Summary on new line, no indent
-        summary_lines = self._wrap_text_lines(
-            summary_text, width, '', ''
-        )
-        lines = [prefix] + summary_lines
-    else:
-        # Summary continues after prefix
-        indent = ' ' * prefix_len
-        summary_lines = self._wrap_text_lines(
-            summary_text, width, prefix, indent
-        )
-        lines = summary_lines
-
-    # Render details
-    for detail in all_details:
-        # Apply detail marker to first line only
-        detail_text = (
-            self.detail_marker + detail if self.detail_marker else detail
-        )
-        indent_str = ' ' * prefix_len
-
-        # Wrap detail
-        detail_lines = self._wrap_text_lines(
-            detail_text, width, indent_str, indent_str
-        )
-
-        # Truncate if needed
-        if self.max_detail_lines and len(detail_lines) > self.max_detail_lines:
-            detail_lines = detail_lines[:self.max_detail_lines]
-            detail_lines.append(
-                indent_str + f"... ({len(detail_lines) - self.max_detail_lines} more lines truncated)"
-            )
-
-        # Add separator before detail
-        if self.detail_separator:
-            lines.append('')  # Blank line (if separator includes \n\n)
-        lines.extend(detail_lines)
-
-    return '\n'.join(lines)
-
-
-def _render_prefix(self, record: _records.Record) -> str:
-    """Renders the prefix for this record."""
-    if isinstance(self.prefix_emitter, str):
-        return self.prefix_emitter
-    # Callable prefix emitter
-    return self.prefix_emitter(record.address, record.flavor)
-
-
-def _render_summary(self, summary: _records.MessageSummary) -> str:
-    """Converts summary (str or Exception) to display text."""
-    if isinstance(summary, BaseExceptionGroup):
-        # Should not reach here (handled in __call__)
-        return self._render_exception_group_summary(summary)
-    elif isinstance(summary, Exception):
-        if self.exception_include_type:
-            exc_type = type(summary).__name__
-            exc_msg = str(summary)
-            return f"{exc_type}: {exc_msg}" if exc_msg else exc_type
-        else:
-            return str(summary)
-    return summary
-
-
-def _render_exception_group_summary(
-    self, group: BaseExceptionGroup
-) -> str:
-    """Renders summary line for exception group."""
-    exc_type = type(group).__name__
-    message = str(group.message) if hasattr(group, 'message') else str(group)
-    count = len(group.exceptions)
-    plural = "exception" if count == 1 else "exceptions"
-    return f"{exc_type}: {message} ({count} {plural})"
-
-
-def _extract_exception_group_details(
-    self,
-    group: BaseExceptionGroup,
-    indent_level: int = 0,
-) -> list[str]:
-    """Extracts exception group members as detail strings.
-
-    Preserves nesting structure through indentation.
-    Recursively processes nested exception groups.
-    """
-    details = []
-    indent = '  ' * indent_level  # 2 spaces per nesting level
-
-    for exc in group.exceptions:
-        if isinstance(exc, BaseExceptionGroup):
-            # Nested group: render summary and recurse
-            exc_type = type(exc).__name__
-            message = str(exc.message) if hasattr(exc, 'message') else str(exc)
-            count = len(exc.exceptions)
-            plural = "exception" if count == 1 else "exceptions"
-            details.append(f"{indent}{exc_type}: {message} ({count} {plural})")
-
-            # Recursively extract nested exceptions
-            nested = self._extract_exception_group_details(exc, indent_level + 1)
-            details.extend(nested)
-        else:
-            # Regular exception: render as detail
-            exc_type = type(exc).__name__
-            exc_msg = str(exc)
-            detail = f"{indent}{exc_type}: {exc_msg}" if exc_msg else f"{indent}{exc_type}"
-            details.append(detail)
-
-    return details
-
-
-def _wrap_text_lines(
-    self,
-    text: str,
-    width: Optional[int],
-    initial_indent: str,
-    subsequent_indent: str,
-) -> list[str]:
-    """Wraps text into lines, respecting width and indentation.
-
-    Args:
-        text: The text to wrap.
-        width: Maximum line width (None = no wrapping).
-        initial_indent: Indent for first line.
-        subsequent_indent: Indent for continuation lines.
-
-    Returns:
-        List of wrapped lines (including indentation).
-    """
-    if not self.wrap_text or width is None:
-        return [initial_indent + text]
-
-    if self.wrap_at_words:
-        import textwrap
-        return textwrap.wrap(
-            text,
-            width=width,
-            initial_indent=initial_indent,
-            subsequent_indent=subsequent_indent,
-            break_long_words=False,
-            break_on_hyphens=False,
-        )
-    else:
-        # Simple hard wrap at character boundary
-        lines = []
-        remaining = text
-        first = True
-
-        while remaining:
-            indent = initial_indent if first else subsequent_indent
-            available = width - len(indent)
-
-            if available <= 0:
-                # Pathological case: indent longer than width
-                # Take at least 1 character to avoid infinite loop
-                chunk_size = max(1, width - len(indent))
-                lines.append(indent + remaining[:chunk_size])
-                remaining = remaining[chunk_size:]
-            else:
-                lines.append(indent + remaining[:available])
-                remaining = remaining[available:]
-
-            first = False
-
-        return lines if lines else [initial_indent]
+    # Combine with separator
+    return configuration.details_separator.join((
+        summary_initial, *summary_subsequent, *details))
 ```
+
+**Key implementation features**:
+- `PrefixEmission` dataclass captures both text and visual width
+- Prefix emission happens once, metadata reused for indentation decisions
+- Summary split into initial (first line) and subsequent (wrapped lines)
+- Configuration separation allows easy sharing/reuse
 
 ### Edge Cases
 
@@ -465,45 +329,59 @@ See `.auxiliary/notes/migration.md` for details on Sundae migration plan.
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
+| **Architecture** | | |
 | Prefix location | Merged into textualizer | Better cohesion, simpler architecture |
-| Exception groups | Handle in textualizer (Option B) | Least surprise, flexibility for different renderers |
-| Nested groups | Preserve with indentation | Information preservation over pure readability |
-| Group member order | Before user details | Logical: group contents first, then context |
+| Configuration structure | Separate `TextualizerConfiguration` dataclass | Reusable, composable, clean separation |
+| **Width Calculation** | | |
+| Default approach | Regex ANSI strip + optional wcwidth | Handles common case (ANSI), lightweight |
+| Standard approach | Rich visual width | Full Unicode support (emoji, wide chars) |
+| **Exception Handling** | | |
+| Exception groups | Handle in textualizer (Option B) | Least surprise, flexibility for renderers |
+| Nested groups | Preserve with indentation | Information preservation |
+| Group member order | Before user details | Logical ordering |
 | Sub-exception traces | Suppressed | Avoid excessive verbosity |
-| Width calculation (default) | Character count | Simple, no dependencies |
-| Width calculation (standard) | Visual width via Rich | Accurate, handles ANSI/Unicode |
-| Detail truncation | At textualizer level | Intelligent handling vs awkward mid-frame cuts |
-| `combined_overflow_threshold` | Float (fraction) | Flexible across terminal sizes |
-| `detail_marker` application | First line only | Clean continuation line appearance |
-| `wrap_text` scope | Both summary and details | Consistent behavior, simpler config |
+| Exception format | Template string (`{name}`, `{message}`) | Flexible, customizable |
+| **Wrapping/Layout** | | |
+| Wrapping control | `ColumnsConstraints` enum (Continue/Complect/Truncate) | Precise control |
+| Incision boundaries | `IncisionBoundaries` enum (Anywhere/Wordsplits/Whitespace) | Fine-grained control |
+| Prefix overflow | `prefix_incision_ratio` (float) | Intuitive (30% = prefix too large) |
+| Detail truncation | At textualizer level (`details_max`) | Intelligent handling vs mid-frame cuts |
+| Detail marker | `detail_prefix` (first line only) | Clean continuation lines |
+| Separator consistency | Same between all sections | Predictable, simple |
 
-## Open Questions
+## Next Steps
 
-1. Should `exception_include_type=False` for empty exception messages show `repr()` or empty string?
-2. Do we want a `verbose` mode that includes more metadata (timestamp, module, etc.) even in default textualizer?
-3. Should very narrow terminals (< 40 cols?) trigger a different rendering strategy entirely?
+**Immediate priorities** (in `sources/ictr/textualizers.py`):
 
-## Implementation Phases
+1. **Implement `_calculate_visual_width()` utility**
+   - ANSI escape sequence stripping via regex
+   - Optional wcwidth integration
+   - Use in prefix rendering and width calculations
 
-1. **Phase 1**: Basic rendering without exception groups
-   - Prefix rendering
-   - Summary wrapping with overflow detection
-   - Detail rendering with separators
-   - Test with various terminal widths
+2. **Complete `_render_summary_subsequent()`**
+   - Wrapping logic based on `ColumnsConstraints` and `IncisionBoundaries`
+   - Respect `prefix_incision_ratio` for overflow detection
+   - Handle continuation line indentation
 
-2. **Phase 2**: Exception group support
-   - Summary rendering for groups
-   - Detail extraction with nesting
-   - Integration with user details
-   - Edge case handling
+3. **Implement `_render_details()`**
+   - Detail prefix application (first line only)
+   - Wrapping with proper indentation
+   - Truncation if `details_max` specified
 
-3. **Phase 3**: Truncation and polish
-   - `max_detail_lines` implementation
-   - Edge case handling (empty values, narrow terminals)
-   - Performance optimization if needed
+4. **Add exception group support**
+   - Detect `BaseExceptionGroup` in summary
+   - Extract group members with nesting preservation
+   - Format using `exception_format` template
+   - Integrate with user details
 
-4. **Phase 4**: Sundae migration (separate effort)
-   - `sources/ictr/standard/` subpackage
-   - Rich-based textualizer
-   - Template interpolation
-   - Color gradients and styling
+5. **Edge case handling and testing**
+   - Empty summary/details
+   - Very narrow terminals
+   - ANSI codes in various positions
+   - Unicode characters with wcwidth
+
+**Future work**:
+- Sundae migration to `sources/ictr/standard/` subpackage
+- Rich-based textualizer with full Unicode support
+- Template-based prefix interpolation
+- Color gradients and styling
