@@ -23,7 +23,7 @@ dependencies = [
   # 'executing ~= 2.2',
   'frigid ~= 4.2',
   'typing-extensions ~= 4.15',
-  'wcwidth ~= 0.2.14',
+  'wcwidth ~= 0.2.14',  # TODO? Python 3.11: Switch to 'cwcwidth'.
   # --- BEGIN: Injected by Copier ---
   # --- END: Injected by Copier ---
 ]
@@ -47,6 +47,8 @@ keywords = [ 'logging', 'debug', 'print', 'introspection' ]
 [[project.authors]]
 name = 'Eric McDonald'
 email = 'emcd@users.noreply.github.com'
+[project.optional-dependencies]
+deluxe = [ 'rich' ]
 [project.urls]
 'Homepage' = 'https://github.com/emcd/python-ictr'
 'Documentation' = 'https://emcd.github.io/python-ictr'
@@ -105,6 +107,7 @@ dependencies = [
   'Jinja2',
   'coverage[toml]',
   'furo',
+  'ictr[deluxe]',
   'isort',
   'packaging',
   'pre-commit',

@@ -26,6 +26,15 @@ from . import printers as _printers
 from . import records as _records
 
 
+_ENRICH = False
+try:
+    import rich.console as _rich_console
+    import rich.traceback as _rich_traceback
+    _ENRICH = True  # pyright: ignore[reportConstantRedefinition]
+except ImportError: pass
+
+
+# TODO: Rename 'PrefixEmitter' to 'Introducer'.
 PrefixEmitter: __.typx.TypeAlias = (
     __.typx.Callable[
         [ _printers.TextualizerControl, _records.Record ], str ] )
@@ -43,12 +52,14 @@ class ColumnsConstraints( __.enum.Enum ):
 class IncisionBoundaries( __.enum.Enum ):
     ''' Where to constrain text which exceeds maximum columns. '''
 
-    Anywhere    = __.enum.auto( )
-    Wordsplits  = __.enum.auto( )  # hyphens + whitespace
+    Nowhere     = __.enum.auto( )
     Whitespace  = __.enum.auto( )  # horizontal spaces and tabs
+    Wordsplits  = __.enum.auto( )  # hyphens + whitespace
+    Anywhere    = __.enum.auto( )
 
 
 class PrefixEmission( __.immut.DataclassObject ):
+    # TODO: Rename to 'Introduction'.
     ''' Structure for emitted prefix. '''
 
     text: str
@@ -145,11 +156,92 @@ class TextualizerDefault( Textualizer ):
         raise NotImplementedError  # TODO: Proper error.
 
 
+def _complect_text(
+    configuration: TextualizerConfiguration,
+    columns_count: int,
+    text: str,
+) -> tuple[ str, ... ]:
+    incise_excesses = (
+        configuration.incision_boundary is not IncisionBoundaries.Nowhere )
+    incise_naturally = (
+        configuration.incision_boundary is IncisionBoundaries.Wordsplits )
+    return tuple( __.textwrap.wrap(
+        text,
+        break_long_words = incise_excesses,
+        break_on_hyphens = incise_naturally,
+        width = columns_count ) )
+
+
 def _count_columns_visual( text: str ) -> int:
     # Note: If CSI ED ("Erase on Display") or EL ("Erase in Line") sequences
     #       are used within the text, then the count will not be accurate.
     text_no_ansi = _printers.remove_ansi_c1_sequences( text )
     return __.wcwidth.wcswidth( text_no_ansi )
+
+
+def _prepare_object_lines_plain(
+    control: _printers.TextualizerControl,
+    columns_count: __.typx.Optional[ int ],
+    entity: object,
+) -> tuple[ str, ... ]:
+    text = __.pprint.pformat(
+        # TODO? Pass configurable indentation width.
+        entity, indent = 2, width = columns_count or __.sys.maxsize )
+    return tuple( text.split( '\n' ) )
+
+
+def _prepare_object_lines_rich(
+    control: _printers.TextualizerControl,
+    columns_count: __.typx.Optional[ int ],
+    entity: object,
+) -> tuple[ str, ... ]:
+    console = _produce_rich_console( control, columns_count )
+    with console.capture( ) as capture:
+        console.print( entity )
+    text = capture.get( )
+    return tuple( text.split( '\n' ) )
+
+
+def _prepare_exception_lines_plain(
+    control: _printers.TextualizerControl,
+    columns_count: __.typx.Optional[ int ],
+    exception: BaseException,
+) -> tuple[ str, ... ]:
+    # tbe = __.tb.TracebackException.from_exception( exception )
+    # TODO: Implement
+    return ( )
+
+
+def _prepare_exception_lines_rich(
+    control: _printers.TextualizerControl,
+    columns_count: __.typx.Optional[ int ],
+    exception: BaseException,
+) -> tuple[ str, ... ]:
+    # TODO: Ensure that exception groups are handled properly.
+    console = _produce_rich_console( control, columns_count )
+    traceback = _rich_traceback.Traceback.from_exception(
+        type( exception ), exception, exception.__traceback__ )
+    with console.capture( ) as capture:
+        console.print( traceback )
+    text = capture.get( )
+    return tuple( text.split( '\n' ) )
+
+
+def _produce_rich_console(
+    control: _printers.TextualizerControl,
+    columns_count: __.typx.Optional[ int ],
+) -> _rich_console.Console:
+    charset = control.charset or ''
+    safe = charset.startswith( 'utf-' )
+    colorize = True  # TODO: Determine from TTY.
+    blackhole = open( # noqa: SIM115
+        __.os.devnull, 'w', encoding = __.locale.getpreferredencoding( ) )
+    return _rich_console.Console(
+        file = blackhole,
+        force_terminal = colorize,
+        no_color = not colorize,
+        safe_box = safe,
+        width = columns_count )
 
 
 def _render_details(
@@ -193,12 +285,17 @@ def _render_summary_core(
     configuration: TextualizerConfiguration,
     summary: _records.MessageSummary,
 ) -> str:
+    # TODO? Strip ANSI codes in plain mode.
     if isinstance( summary, str ): return summary
     if isinstance( summary, BaseException ):
-        # TODO: Render with exception template.
-        return str( summary )
-    # TODO? 'pformat' other objects.
-    raise NotImplementedError  # TODO: Proper error.
+        eclass = type( summary )
+        qname = eclass.__qualname__
+        return configuration.exception_format.format(
+            message = str( summary ),
+            name = eclass.__name__,
+            qname = qname,
+            fqname = f"{eclass.__module__}.{qname}" )
+    return ''  # Assume complex render in subsequent lines.
 
 
 def _render_summary_initial(
@@ -208,12 +305,12 @@ def _render_summary_initial(
     summary: _records.MessageSummary,
 ) -> str:
     line_columns_total = control.columns_count or configuration.columns_count
+    prefix_columns_count = (
+            _count_columns_visual( configuration.base_prefix )
+        +   prefix.columns_count + 1 )
     infinite_lines = line_columns_total is None
     core = _render_summary_core( control, configuration, summary )
-    columns_total = (
-            _count_columns_visual( configuration.base_prefix )
-        +   prefix.columns_count + 1
-        +   _count_columns_visual( core ) )
+    columns_total = prefix_columns_count + _count_columns_visual( core )
     prefix_incision_ratio = configuration.prefix_incision_ratio
     isolate_prefix = 0 == prefix_incision_ratio
     if not isolate_prefix and not infinite_lines:
@@ -222,19 +319,23 @@ def _render_summary_initial(
         isolate_prefix = (
             prefix.columns_count
             >= line_columns_total * prefix_incision_ratio )
+    # TODO: If prefix is not isolated, still allow message to wrap.
     if isolate_prefix:
         lines: list[ str ] = [ prefix.text ]
         if infinite_lines: lines.append( core )
         else:
+            columns_allocation = (
+                    line_columns_total
+                -   _count_columns_visual( configuration.base_prefix ) )
             match configuration.columns_constraint:
                 case ColumnsConstraints.Continue:
                     lines.append( core )
                 case ColumnsConstraints.Complect:
-                    # TODO: Implement.
-                    pass
+                    lines.extend( _complect_text(
+                        configuration, columns_allocation, core ) )
                 case ColumnsConstraints.Truncate:
-                    # TODO: Implement.
-                    pass
+                    # TODO: Properly handle wide characters and ANSI sequences.
+                    lines.append( core[ : columns_allocation ] )
         return '\n'.join( map(
             lambda line: f"{configuration.base_prefix}{line}", lines ) )
     return "{}{} {}".format( configuration.base_prefix, prefix.text, core )
@@ -246,13 +347,14 @@ def _render_summary_subsequent(
     summary: _records.MessageSummary,
 ) -> tuple[ str, ... ]:
     lines: list[ str ] = [ ]
-    if isinstance( summary, str ):
-        # TODO: Render with wrapping.
-        lines.append( summary )
-    elif isinstance( summary, BaseException ):
+    if isinstance( summary, str ): return ( )
+    if isinstance( summary, BaseException ):
         # TODO: Render with stack frames, exception template, and wrapping.
         lines.append( str( summary ) )
-    # TODO: Implement.
+    else:
+        # TODO? 'pformat' other objects in subsequent lines.
+        pass
+    # TODO: Prepend base prefix and blank detail prefix to each line.
     return tuple( lines )
 
 
