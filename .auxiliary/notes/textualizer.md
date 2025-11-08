@@ -1,6 +1,6 @@
 # Textualizer Implementation Design
 
-**Last Updated**: 2025-11-06
+**Last Updated**: 2025-11-08
 
 This document captures the design decisions, rationale, and implementation details for the textualizer system in ictr v2.
 
@@ -27,28 +27,55 @@ generation and body rendering.
 - `FlavorConfiguration` stores prefix **data** (template, colors, etc.), not callables
 - Sundae prefix logic becomes part of standard textualizer in `sources/ictr/standard/`
 
-## TextualizerDefault - Simple Implementation
+## Conditional Rich Integration Architecture
 
-The default textualizer provides straightforward text rendering with minimal dependencies. Uses ANSI-stripping for width calculation and optional `wcwidth` for Unicode support.
+**Decision**: Use conditional Rich integration within single textualizer module rather than separate subpackage.
+
+**Implementation approach**:
+- Runtime detection: `_ENRICH` flag set based on Rich import success
+- Function pairs: `_prepare_*_plain()` and `_prepare_*_rich()` for divergent behavior
+- Dispatch pattern: Module-level function assignment based on `_ENRICH`
+- Shared framing logic: Prefix handling, wrapping, detail separation identical between modes
+
+**Rationale**:
+- **Code reuse**: Framing logic (95% of code) shared between plain/rich modes
+- **Maintainability**: Related logic stays together, changes visible side-by-side
+- **Clear separation**: Function pairs make behavioral differences obvious
+- **Graceful degradation**: Plain mode works without Rich dependency
+- **Simple upgrade**: Installing Rich automatically enables enhanced rendering
+
+**Alternative considered (rejected)**: Separate `sources/ictr/standard/` subpackage
+- ❌ Would require duplicating or awkwardly importing framing logic
+- ❌ Makes related code harder to maintain in sync
+- ❌ Unclear boundary between "default" and "standard" textualizers
+
+## TextualizerDefault - Unified Implementation
+
+The default textualizer provides text rendering with automatic Rich integration when available. Plain mode strips ANSI and uses stdlib; Rich mode preserves ANSI and handles complex rendering.
 
 ### Design Principles
 
-1. **Minimal dependencies**: `wcwidth` (optional, for Unicode width), `textwrap` (stdlib)
-2. **ANSI-aware**: Strips ANSI escape sequences for accurate visual width calculation
-3. **Configurable behavior**: Enum-based configuration for precise control
-4. **Graceful degradation**: Handles edge cases (no terminal width, very narrow terminals)
+1. **Minimal required dependencies**: `wcwidth` (Unicode width), `textwrap` (stdlib)
+2. **Optional Rich**: Auto-detected, enables enhanced rendering when available
+3. **ANSI handling**: Stripped in plain mode, preserved in Rich mode
+4. **Configurable behavior**: Enum-based configuration for precise control
+5. **Graceful degradation**: Handles edge cases (no terminal width, very narrow terminals)
 
 ### Implementation Status
 
-**Current** (2025-11-06):
+**Current** (2025-11-08):
 - ✅ Configuration structure (`TextualizerConfiguration` + `TextualizerDefault`)
 - ✅ `PrefixEmission` dataclass (text + visual width)
 - ✅ Prefix rendering with emission metadata
 - ✅ Summary rendering (initial line, core extraction)
-- 🚧 Summary subsequent lines (wrapping logic) - in progress
+- ✅ Visual width calculation (`_count_columns_visual` using wcwidth)
+- ✅ Conditional Rich integration (`_ENRICH` flag, function pairs)
+- ✅ Text wrapping (`_complect_text` using textwrap)
+- 🚧 ANSI stripping in plain mode - needs integration
+- 🚧 Summary subsequent lines (exception/object rendering) - in progress
 - 🚧 Details rendering - TODO
 - 🚧 Exception group handling - TODO
-- 🚧 Visual width calculation utility - TODO
+- 🚧 Truncate mode with visual width - TODO
 
 ### Configuration Structure
 
@@ -124,42 +151,32 @@ class TextualizerDefault( Textualizer ):
 
 ### Visual Width Calculation
 
-**Decision**: Use regex-based ANSI stripping + optional `wcwidth` for Unicode.
+**Implementation**: ANSI stripping + `wcwidth` (required dependency).
 
-**Implementation approach**:
-- Regex pattern to strip ANSI escape sequences: `\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`
-- Then measure remaining text with `len()` or `wcwidth.wcswidth()` if available
-- No Rich dependency for default textualizer (save for `standard/` subpackage)
-
-**Benefits**:
-- Handles ANSI color codes correctly (common in prefixes)
-- Lightweight `wcwidth` package (single file, no dependencies) handles Unicode width
-- No external dependencies if `wcwidth` unavailable (falls back to simple `len()`)
+**Current implementation** (`_count_columns_visual`):
+- Reuses existing `_printers.remove_ansi_c1_sequences()` for ANSI stripping
+- Uses `wcwidth.wcswidth()` for proper Unicode width calculation
+- Handles wide characters (CJK, emoji), combining characters correctly
 
 **Known edge cases**:
-- CSI ED/EL sequences (clear display/line): Matched by regex but may have unusual semantics if embedded mid-string (very rare in logging)
-- Without `wcwidth`: Emoji and wide characters counted as single width (acceptable fallback)
+- CSI ED/EL sequences: Matched by ANSI regex but may have unusual semantics if embedded mid-string (very rare in logging, typically used for terminal animations)
 
-**Utility function** (to be implemented):
-```python
-import re as _re
+### ANSI Handling Strategy
 
-_ANSI_ESCAPE_PATTERN = _re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+**Decision**: Strip ANSI from message content in plain mode, preserve in Rich mode.
 
-def _calculate_visual_width(text: str) -> int:
-    """Calculate visual width excluding ANSI sequences.
+**Rationale**:
+- **Avoids wrapping complexity**: Naive wrapping breaks ANSI state (colors bleed or disappear)
+- **Clean separation**: Plain mode = plain text, Rich mode = full styling support
+- **Clear upgrade path**: Users wanting ANSI in messages install Rich
+- **Predictable behavior**: Mode determines capability, no surprises
 
-    Uses wcwidth if available for proper Unicode width handling.
-    Falls back to len() for simple character counting.
-    """
-    stripped = _ANSI_ESCAPE_PATTERN.sub('', text)
-    try:
-        import wcwidth
-        width = wcwidth.wcswidth(stripped)
-        return width if width >= 0 else len(stripped)
-    except ImportError:
-        return len(stripped)
-```
+**Implementation**:
+- Plain mode (`not _ENRICH`): Strip ANSI from summary/details before wrapping
+- Rich mode (`_ENRICH`): Preserve ANSI, use Rich's ANSI-aware wrapping
+- Prefix ANSI: Always preserved (stripped only for width calculation)
+
+See `.auxiliary/notes/snippets.md` for implementation code.
 
 ### Exception Group Handling
 
@@ -332,9 +349,15 @@ See `.auxiliary/notes/migration.md` for details on Sundae migration plan.
 | **Architecture** | | |
 | Prefix location | Merged into textualizer | Better cohesion, simpler architecture |
 | Configuration structure | Separate `TextualizerConfiguration` dataclass | Reusable, composable, clean separation |
+| Rich integration | Conditional within single module | Code reuse, maintainability, graceful degradation |
+| Subpackage approach | Rejected | Would duplicate framing logic |
 | **Width Calculation** | | |
-| Default approach | Regex ANSI strip + optional wcwidth | Handles common case (ANSI), lightweight |
-| Standard approach | Rich visual width | Full Unicode support (emoji, wide chars) |
+| Implementation | ANSI strip + wcwidth (required) | Accurate, handles Unicode/wide chars |
+| ANSI in prefix | Preserved (stripped for width only) | Visual appeal without breaking layout |
+| **ANSI in Message Content** | | |
+| Plain mode | Strip ANSI from summary/details | Avoids wrapping complexity |
+| Rich mode | Preserve ANSI, use Rich wrapping | Full styling support |
+| Upgrade path | Install Rich for ANSI in messages | Clear, simple |
 | **Exception Handling** | | |
 | Exception groups | Handle in textualizer (Option B) | Least surprise, flexibility for renderers |
 | Nested groups | Preserve with indentation | Information preservation |
@@ -343,45 +366,91 @@ See `.auxiliary/notes/migration.md` for details on Sundae migration plan.
 | Exception format | Template string (`{name}`, `{message}`) | Flexible, customizable |
 | **Wrapping/Layout** | | |
 | Wrapping control | `ColumnsConstraints` enum (Continue/Complect/Truncate) | Precise control |
-| Incision boundaries | `IncisionBoundaries` enum (Anywhere/Wordsplits/Whitespace) | Fine-grained control |
+| Incision boundaries | `IncisionBoundaries` enum (Nowhere/Whitespace/Wordsplits/Anywhere) | Fine-grained control |
 | Prefix overflow | `prefix_incision_ratio` (float) | Intuitive (30% = prefix too large) |
-| Detail truncation | At textualizer level (`details_max`) | Intelligent handling vs mid-frame cuts |
+| Truncate mode | Keep with visual width handling | Useful for fixed-width contexts |
 | Detail marker | `detail_prefix` (first line only) | Clean continuation lines |
 | Separator consistency | Same between all sections | Predictable, simple |
+
+## Traceback Formatting
+
+**Experiments**: See `.auxiliary/scribbles/traceback_experiments.py` and `traceback_findings.md`
+
+### Key Findings
+
+**stdlib limitations**:
+- No built-in width constraint support in any traceback method
+- Manual wrapping breaks structure (file paths split mid-line)
+- `StackSummary` provides frame-level access but no width control
+- `extract_stack()` works for non-exception stacks (inspection)
+
+**Rich capabilities**:
+- Full width constraint support via `Console(width=N)`
+- Intelligent wrapping preserves structure even at narrow widths
+- Can capture output as string with `console.capture()`
+- Exception-focused (not designed for non-exception stacks)
+- Output includes ANSI escape sequences
+
+### Implementation Strategy
+
+**Plain mode**: Custom compact formatting
+- Walk traceback with `traceback.extract_tb()`
+- Format frames manually: location, function, code line
+- Truncate long paths from left: `"...file.py:123"`
+- Handle chained exceptions recursively
+- Width control via character counting/truncation
+
+**Rich mode**: Use Rich Traceback
+- Create `Traceback.from_exception()` with exception info
+- Render via `Console` with width constraint
+- Capture output with `console.capture()`
+- Split into lines for integration
+- Beautiful rendering with colors, boxes, syntax highlighting
+
+See `.auxiliary/notes/snippets.md` for implementation code examples.
 
 ## Next Steps
 
 **Immediate priorities** (in `sources/ictr/textualizers.py`):
 
-1. **Implement `_calculate_visual_width()` utility**
-   - ANSI escape sequence stripping via regex
-   - Optional wcwidth integration
-   - Use in prefix rendering and width calculations
+1. **Integrate ANSI stripping in plain mode**
+   - Add stripping to `_render_summary_core()` when `not _ENRICH`
+   - Strip from details before wrapping
 
-2. **Complete `_render_summary_subsequent()`**
-   - Wrapping logic based on `ColumnsConstraints` and `IncisionBoundaries`
-   - Respect `prefix_incision_ratio` for overflow detection
-   - Handle continuation line indentation
+2. **Implement `_truncate_visual()` utility**
+   - Handle wide characters with wcwidth
+   - Add ellipsis indicator when truncating
+   - Use for `ColumnsConstraints.Truncate` mode
 
-3. **Implement `_render_details()`**
+3. **Complete `_render_summary_subsequent()`**
+   - Exception rendering: call `_prepare_exception_lines_plain/rich`
+   - Object rendering: call `_prepare_object_lines_plain/rich`
+   - Prepend base_prefix and detail indent to each line
+
+4. **Implement `_prepare_exception_lines_plain()`**
+   - Walk traceback frames with `traceback.extract_tb()`
+   - Format with width constraints (truncate paths if needed)
+   - Handle chained exceptions (`__cause__`, `__context__`)
+
+5. **Implement `_render_details()`**
    - Detail prefix application (first line only)
-   - Wrapping with proper indentation
+   - Wrapping based on `ColumnsConstraints` and `IncisionBoundaries`
    - Truncation if `details_max` specified
+   - Proper indentation alignment
 
-4. **Add exception group support**
+6. **Add exception group support**
    - Detect `BaseExceptionGroup` in summary
    - Extract group members with nesting preservation
    - Format using `exception_format` template
    - Integrate with user details
 
-5. **Edge case handling and testing**
-   - Empty summary/details
-   - Very narrow terminals
-   - ANSI codes in various positions
-   - Unicode characters with wcwidth
+7. **Set up dispatch pattern**
+   - Module-level function assignment based on `_ENRICH`
+   - Clean call sites without runtime checks
 
-**Future work**:
-- Sundae migration to `sources/ictr/standard/` subpackage
-- Rich-based textualizer with full Unicode support
-- Template-based prefix interpolation
-- Color gradients and styling
+**Testing priorities**:
+- Various terminal widths (40, 60, 80, 120, unlimited)
+- ANSI codes in prefix, summary, details
+- Unicode characters (wide chars, emoji, combining chars)
+- Exceptions (chained, nested, groups)
+- Empty values, edge cases
