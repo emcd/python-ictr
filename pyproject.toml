@@ -15,16 +15,16 @@ license = 'Apache-2.0'
 readme = { 'file' = 'README.rst', 'content-type' = 'text/x-rst' }
 requires-python = '>= 3.10'
 dependencies = [
-  'absence ~= 1.1',
   'accretive ~= 4.2',
   # 'asttokens ~= 3.0',
   'colorama', # TODO: Replace dependency with internal implementation.
-  'dynadoc ~= 1.4',
   # 'executing ~= 2.2',
-  'frigid ~= 4.2',
   'typing-extensions ~= 4.15',
   'wcwidth ~= 0.2.14',  # TODO? Python 3.11: Switch to 'cwcwidth'.
   # --- BEGIN: Injected by Copier ---
+  'absence~=1.1',
+  'dynadoc~=1.4',
+  'frigid~=4.2',
   # --- END: Injected by Copier ---
 ]
 classifiers = [ # https://pypi.org/classifiers
@@ -142,7 +142,6 @@ linters = [
   # --- BEGIN: Injected by Copier ---
   # --- END: Injected by Copier ---
   """isort --check-only --diff sources tests""",
-  """vulture""",
   """pyright sources""",
 ]
 packagers = [

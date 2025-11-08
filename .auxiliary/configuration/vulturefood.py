@@ -20,3 +20,11 @@ charset
 columns_count
 ctime
 __call__
+
+Whitespace
+Anywhere
+detail_prefix
+_prepare_object_lines_plain
+_prepare_object_lines_rich
+_prepare_exception_lines_plain
+_prepare_exception_lines_rich
