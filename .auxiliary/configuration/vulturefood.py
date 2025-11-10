@@ -24,7 +24,8 @@ __call__
 Whitespace
 Anywhere
 detail_prefix
-_prepare_object_lines_plain
-_prepare_object_lines_rich
-_prepare_exception_lines_plain
-_prepare_exception_lines_rich
+_complect_exception_plain
+_complect_exception_rich
+_complect_object_plain
+_complect_object_rich
+_complect_text_rich

@@ -316,6 +316,15 @@ InstallAliasArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.typx.Doc(
         ''' Alias under which the dispatcher is installed in builtins. ''' ),
 ]
+IntroducerArgument: __.typx.TypeAlias = __.typx.Annotated[
+    __.Absential[ _texts.Introducer ],
+    __.typx.Doc(
+        ''' String or factory which produces message introduction.
+
+            Factory takes formatter control, module name, and flavor as
+            arguments. Returns introduction string.
+        ''' ),
+]
 ModuleNameArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ str ],
     __.typx.Doc(
@@ -330,15 +339,6 @@ ModulecfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' Module configurations for the truck.
 
             If absent, defaults to global modules registry.
-        ''' ),
-]
-PrefixEmitterArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ _texts.PrefixEmitterUnion ],
-    __.typx.Doc(
-        ''' String or factory which produces output prefix string.
-
-            Factory takes formatter control, module name, and flavor as
-            arguments. Returns prefix string.
         ''' ),
 ]
 PrinterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
@@ -470,7 +470,7 @@ def register_module(
     flavors: FlavorsArgument = __.absent,
     formatter_factory: FormatterFactoryArgument = __.absent,
     include_context: IncludeContextArgument = __.absent,
-    prefix_emitter: PrefixEmitterArgument = __.absent,
+    prefix_emitter: IntroducerArgument = __.absent,
 ) -> _cfg.ModuleConfiguration:
     ''' Registers module configuration on the builtin truck.
 

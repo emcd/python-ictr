@@ -46,6 +46,9 @@ class TextualizerControl( __.immut.DataclassObject ):
 
                 May be ``None`` if indeterminable or irrelevant. ''' ),
     ] = None
+    colorize: __.typx.Annotated[
+        bool, __.typx.Doc( ''' Colorize textualization? ''' )
+    ] = False
     columns_count: __.typx.Annotated[
         __.typx.Optional[ int ],
         __.typx.Doc(
@@ -93,9 +96,13 @@ class SimplePrinter( Printer ):
     def provide_textualizer_control(
         self
     ) -> __.typx.Optional[ TextualizerControl ]:
-        # TODO: Detect terminal width if isatty
-        # TODO: Get encoding from target
-        return TextualizerControl( )
+        tty = self.target.isatty( )
+        colorize = tty
+        if __.os.environ.get( 'NO_COLOR' ): colorize = False
+        colorize = colorize or self.force_color
+        # TODO: Detect terminal width if isatty.
+        # TODO: Get encoding from target.
+        return TextualizerControl( colorize = colorize )
 
 
 PrinterFactory: __.typx.TypeAlias = (
