@@ -29,6 +29,7 @@ from . import textualizers as _texts
 
 
 class Reporter( __.immut.DataclassObject ):
+    # TODO? Multiplex across array of printers.
     ''' Formats and prints messages to targets. '''
 
     active: bool  # TODO? Also accept predicate function to decide if active.
@@ -50,10 +51,8 @@ class Reporter( __.immut.DataclassObject ):
         record = _records.Record(
             address = self.address, content = content, flavor = self.flavor )
         tcontrol = self.printer.provide_textualizer_control( )
-        text = (
-            None if tcontrol is None
-            else self.textualizer( tcontrol, record ) )
-        self.printer( record, text )
+        if tcontrol is None: self.printer( record )
+        else: self.printer( self.textualizer( tcontrol, record ) )
 
     # TODO: inscribe (same as __call__)
     # TODO: inscribe_async

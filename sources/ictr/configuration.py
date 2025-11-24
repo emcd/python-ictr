@@ -123,4 +123,4 @@ def _produce_trace_textualizer_factory(
 ) -> _texts.TextualizerFactory:
     return (
         lambda tcontrol, record:
-        _texts.TextualizerDefault( prefix_emitter = f"TRACE{level}| " ) )
+        _texts.TextualizerDefault( introducer = f"TRACE{level}| " ) )

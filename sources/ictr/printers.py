@@ -37,7 +37,7 @@ _validate_arguments = (
 
 
 class TextualizerControl( __.immut.DataclassObject ):
-    ''' Contextual data for formatter and prefix factories. '''
+    ''' Contextual data for formatter and introduction factories. '''
 
     charset: __.typx.Annotated[
         __.typx.Optional[ str ],
@@ -62,9 +62,7 @@ class Printer( __.immut.DataclassProtocol, __.typx.Protocol ):
     ''' Abstract base class for printers. '''
 
     @__.abc.abstractmethod
-    def __call__(
-        self, record: _records.Record, text: __.typx.Optional[ str ] = None
-    ) -> None:
+    def __call__( self, record: str | _records.Record ) -> None:
         ''' Prints record to destination. '''
         raise NotImplementedError
 
@@ -85,10 +83,8 @@ class SimplePrinter( Printer ):
     target: __.io.TextIOBase
     force_color: bool = False
 
-    def __call__(
-        self, record: _records.Record, text: __.typx.Optional[ str ] = None
-    ) -> None:
-        if text is None: text = str( record )  # Fallback
+    def __call__( self, record: str | _records.Record ) -> None:
+        text = record if isinstance( record, str ) else str( record )
         if not self.force_color and not self.target.isatty( ):
             text = remove_ansi_c1_sequences( text )
         print( text, file = self.target )

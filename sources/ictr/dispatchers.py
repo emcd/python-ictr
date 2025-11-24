@@ -37,11 +37,11 @@ _self_modulecfg: _cfg.ModuleConfiguration = _cfg.ModuleConfiguration(
         note = _cfg.FlavorConfiguration(
             textualizer_factory = (
                 lambda tcontrol, record: _texts.TextualizerDefault(
-                    prefix_emitter = 'NOTE| ' ) ) ),
+                    introducer = 'NOTE| ' ) ) ),
         error = _cfg.FlavorConfiguration(
             textualizer_factory = (
                 lambda tcontrol, record: _texts.TextualizerDefault(
-                    prefix_emitter = 'ERROR| ' ) ) ) ) )
+                    introducer = 'ERROR| ' ) ) ) ) )
 _validate_arguments = (
     __.validate_arguments(
         globalvars = globals( ),

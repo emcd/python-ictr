@@ -29,3 +29,6 @@ _complect_exception_rich
 _complect_object_plain
 _complect_object_rich
 _complect_text_rich
+
+exception_format
+_complect_stacktrace_rich
