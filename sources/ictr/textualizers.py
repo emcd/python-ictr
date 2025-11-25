@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Formatters, formatter factories, and auxiliary functions and types. '''
+''' Textualizers, textualizer factories, and auxiliary functions and types. '''
 
 
 from . import __
@@ -44,8 +44,8 @@ Introducer: __.typx.TypeAlias = str | IntroducerFunction
 class ColumnsConstraints( __.enum.Enum ):
     ''' How to constrain text which exceeds maximum columns. '''
 
-    Continue    = __.enum.auto( )  # overflow
     Complect    = __.enum.auto( )  # fold/wrap
+    Exceed      = __.enum.auto( )  # overflow
     # Truncate    = __.enum.auto( )  # chop/cut
 
 
@@ -188,7 +188,7 @@ class TextualizerState( __.immut.DataclassObject ):
             __.sys.maxsize if infinite_lines else line_columns_total_nullable )
         columns_constraint = configuration.columns_constraint
         if infinite_lines:
-            columns_constraint = ColumnsConstraints.Continue
+            columns_constraint = ColumnsConstraints.Exceed
         return cls(
             configuration = configuration,
             control = control,
@@ -197,10 +197,17 @@ class TextualizerState( __.immut.DataclassObject ):
             line_columns_total = line_columns_total )
 
 
-def _complect_exception_plain(
+def _count_columns_visual( text: str ) -> int:
+    # Note: If CSI ED ("Erase on Display") or EL ("Erase in Line") sequences
+    #       are used within the text, then the count will not be accurate.
+    text_no_ansi = _printers.remove_ansi_c1_sequences( text )
+    return __.wcwidth.wcswidth( text_no_ansi )
+
+
+def _linearize_exception_plain(
     auxdata: TextualizerState,
-    columns_max: int,
     exception: BaseException,
+    columns_max: __.Absential[ int ] = __.absent,
     trace: bool = False,
 ) -> tuple[ str, ... ]:
     tbe = __.tb.TracebackException.from_exception( exception )
@@ -209,16 +216,16 @@ def _complect_exception_plain(
     lines = [ f"{fqname}: {exception}" ]
     if trace:
         lines.extend(
-            _complect_stacktrace_plain( auxdata, columns_max, tbe.stack ) )
+            _linearize_stacktrace_plain( auxdata, tbe.stack, columns_max ) )
     # TODO: Process '__cause__' and '__context__'.
     # TODO: Process exception groups.
     return tuple( lines )
 
 
-def _complect_exception_rich(
+def _linearize_exception_rich(
     auxdata: TextualizerState,
-    columns_max: int,
     exception: BaseException,
+    columns_max: __.Absential[ int ] = __.absent,
     trace: bool = False,
 ) -> tuple[ str, ... ]:
     # TODO: Ensure that exception groups are handled properly.
@@ -233,16 +240,22 @@ def _complect_exception_rich(
     return tuple( capture.getvalue( ).split( '\n' ) )
 
 
-def _complect_object_plain(
-    auxdata: TextualizerState, columns_max: int, entity: object
+def _linearize_object_plain(
+    auxdata: TextualizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
     # TODO? Pass configurable indentation width.
-    text = __.pprint.pformat( entity, indent = 2, width = columns_max )
+    text = (
+        __.pprint.saferepr( entity ) if __.is_absent( columns_max )
+        else __.pprint.pformat( entity, indent = 2, width = columns_max ) )
     return tuple( text.split( '\n' ) )
 
 
-def _complect_object_rich(
-    auxdata: TextualizerState, columns_max: int, entity: object
+def _linearize_object_rich(
+    auxdata: TextualizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
     capture = __.io.StringIO( )
     console = _produce_rich_console( auxdata, capture, columns_max )
@@ -250,38 +263,45 @@ def _complect_object_rich(
     return tuple( capture.getvalue( ).split( '\n' ) )
 
 
-def _complect_omni(
-    auxdata: TextualizerState, columns_max: int, entity: object
-) -> tuple[ str, ... ]:
-    if _ENRICH: return _complect_omni_rich( auxdata, columns_max, entity )
-    return _complect_omni_plain( auxdata, columns_max, entity )
-
-
-def _complect_omni_plain(
-    auxdata: TextualizerState, columns_max: int, entity: object
-) -> tuple[ str, ... ]:
-    if isinstance( entity, str ):
-        return _complect_text_plain( auxdata, columns_max, entity )
-    if isinstance( entity, BaseException ):
-        return _complect_exception_plain( auxdata, columns_max, entity )
-    return _complect_object_plain( auxdata, columns_max, entity )
-
-
-def _complect_omni_rich(
-    auxdata: TextualizerState, columns_max: int, entity: object
-) -> tuple[ str, ... ]:
-    if isinstance( entity, str ):
-        return _complect_text_rich( auxdata, columns_max, entity )
-    if isinstance( entity, BaseException ):
-        return _complect_exception_rich( auxdata, columns_max, entity )
-    return _complect_object_rich( auxdata, columns_max, entity )
-
-
-def _complect_stacktrace_plain(
+def _linearize_omni(
     auxdata: TextualizerState,
-    columns_max: int,
-    stacktrace: __.tb.StackSummary,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
+    if _ENRICH: return _linearize_omni_rich( auxdata, entity, columns_max )
+    return _linearize_omni_plain( auxdata, entity, columns_max )
+
+
+def _linearize_omni_plain(
+    auxdata: TextualizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> tuple[ str, ... ]:
+    if isinstance( entity, str ):
+        return _linearize_text_plain( auxdata, entity, columns_max )
+    if isinstance( entity, BaseException ):
+        return _linearize_exception_plain( auxdata, entity, columns_max )
+    return _linearize_object_plain( auxdata, entity, columns_max )
+
+
+def _linearize_omni_rich(
+    auxdata: TextualizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> tuple[ str, ... ]:
+    if isinstance( entity, str ):
+        return _linearize_text_rich( auxdata, entity, columns_max )
+    if isinstance( entity, BaseException ):
+        return _linearize_exception_rich( auxdata, entity, columns_max )
+    return _linearize_object_rich( auxdata, entity, columns_max )
+
+
+def _linearize_stacktrace_plain(
+    auxdata: TextualizerState,
+    stacktrace: __.tb.StackSummary,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> tuple[ str, ... ]:
+    infinite_lines = __.is_absent( columns_max )
     lines: list[ str ] = [ ]
     for frame in stacktrace:
         filename_part = f"File '{frame.filename}'"
@@ -290,7 +310,7 @@ def _complect_stacktrace_plain(
         parts = ( filename_part, lineno_part, name_part )
         address = ', '.join( filter( None, parts ) )
         address_size = len( address )
-        if address_size <= columns_max:
+        if infinite_lines or address_size <= columns_max:
             lines.append( address )
         else:
             excess_size = address_size - columns_max - 2  # sans ', '
@@ -309,16 +329,18 @@ def _complect_stacktrace_plain(
             line = frame.line.strip( )
             # TODO? Apply Pygments to line.
             lines_ = iter(
-                _complect_text_plain( auxdata, columns_max - 4, line ) )
+                _linearize_text_plain(
+                    auxdata, line,
+                    __.absent if infinite_lines else columns_max - 4 ) )
             lines.append( "    {}".format( next( lines_ ) ) )
             lines.extend( f"      {line_}" for line_ in lines_ )
     return tuple( lines )
 
 
-def _complect_stacktrace_rich(
+def _linearize_stacktrace_rich(
     auxdata: TextualizerState,
-    columns_max: int,
     stacktrace: __.tb.StackSummary,
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
     frames = [
         _rich_traceback.Frame(
@@ -335,15 +357,19 @@ def _complect_stacktrace_rich(
     return tuple( capture.getvalue( ).split( '\n' ) )
 
 
-def _complect_text_plain(
-    auxdata: TextualizerState, columns_max: int, text: str
+def _linearize_text_plain(
+    auxdata: TextualizerState,
+    text: str,
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
+    text_no_ansi = _printers.remove_ansi_c1_sequences( text )
+    if __.is_absent( columns_max ):
+        return tuple( text_no_ansi.split( '\n' ) )
     configuration = auxdata.configuration
     incise_excesses = (
         configuration.incision_boundary is not IncisionBoundaries.Nowhere )
     incise_naturally = (
         configuration.incision_boundary is IncisionBoundaries.Wordsplits )
-    text_no_ansi = _printers.remove_ansi_c1_sequences( text )
     # TODO? Account for wide characters.
     return tuple( __.textwrap.wrap(
         text_no_ansi,
@@ -352,33 +378,37 @@ def _complect_text_plain(
         width = columns_max ) )
 
 
-def _complect_text_rich(
-    auxdata: TextualizerState, columns_max: int, text: str
+def _linearize_text_rich(
+    auxdata: TextualizerState,
+    text: str,
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
     configuration = auxdata.configuration
     text_ = _rich_text.Text.from_ansi( text )
+    infinite_lines = __.is_absent( columns_max )
     incise = (
-        configuration.incision_boundary is not IncisionBoundaries.Nowhere )
+            not infinite_lines
+        and configuration.incision_boundary is not IncisionBoundaries.Nowhere )
     capture = __.io.StringIO( )
     console = _produce_rich_console( auxdata, capture, columns_max )
-    console.print( text_, overflow = 'fold', no_wrap = not incise )
+    console.print(
+        text_,
+        overflow = 'ignore' if infinite_lines else 'fold',
+        no_wrap = not incise )
     return tuple( capture.getvalue( ).split( '\n' ) )
 
 
-def _count_columns_visual( text: str ) -> int:
-    # Note: If CSI ED ("Erase on Display") or EL ("Erase in Line") sequences
-    #       are used within the text, then the count will not be accurate.
-    text_no_ansi = _printers.remove_ansi_c1_sequences( text )
-    return __.wcwidth.wcswidth( text_no_ansi )
-
-
 def _produce_rich_console(
-    auxdata: TextualizerState, capture: __.typx.IO[ str ], columns_max: int
+    auxdata: TextualizerState,
+    capture: __.typx.IO[ str ],
+    columns_max: __.Absential[ int ] = __.absent,
 ) -> _rich_console.Console:
     control = auxdata.control
     charset = control.charset or ''
     colorize = control.colorize
-    columns_max_nullable = None if auxdata.infinite_lines else columns_max
+    columns_max_nullable = (
+        None if auxdata.infinite_lines or __.is_absent( columns_max )
+        else columns_max )
     safe = charset.startswith( 'utf-' )
     return _rich_console.Console(
         file = capture,
@@ -403,16 +433,6 @@ def _render_introduction(
 def _render_detail(
     auxdata: TextualizerState, detail: _records.MessageDetail
 ) -> str:
-    match auxdata.columns_constraint:
-        case ColumnsConstraints.Complect:
-            return _complect_render_detail( auxdata, detail )
-        case ColumnsConstraints.Continue:
-            return _exact_render_detail( auxdata, detail )
-
-
-def _complect_render_detail(
-    auxdata: TextualizerState, detail: _records.MessageDetail
-) -> str:
     configuration = auxdata.configuration
     detail_prefix_i = configuration.detail_prefix_initial
     detail_prefix_i_ccount = _count_columns_visual( detail_prefix_i )
@@ -422,20 +442,17 @@ def _complect_render_detail(
     line_prefix = configuration.line_prefix
     prefix_ccount = (
         _count_columns_visual( line_prefix ) + detail_prefix_i_ccount )
-    remainder_ccount = auxdata.line_columns_total - prefix_ccount
-    lines = iter( _complect_omni( auxdata, remainder_ccount, detail ) )
+    match auxdata.columns_constraint:
+        case ColumnsConstraints.Complect:
+            remainder_ccount = auxdata.line_columns_total - prefix_ccount
+        case ColumnsConstraints.Exceed:
+            remainder_ccount = __.absent
+    lines = iter( _linearize_omni( auxdata, detail, remainder_ccount ) )
     line_i = next( lines )
     lines_final = [ f"{line_prefix}{detail_prefix_i}{line_i}" ]
     lines_final.extend(
         f"{line_prefix}{detail_prefix_s}{line}" for line in lines )
     return '\n'.join( lines_final )
-
-
-def _exact_render_detail(
-    auxdata: TextualizerState, detail: _records.MessageDetail
-) -> str:
-    # TODO: Implement.
-    return ''
 
 
 def _render_summary(
@@ -446,8 +463,8 @@ def _render_summary(
     match auxdata.columns_constraint:
         case ColumnsConstraints.Complect:
             return _complect_render_summary( auxdata, introduction, summary )
-        case ColumnsConstraints.Continue:
-            return _exact_render_summary( auxdata, introduction, summary )
+        case ColumnsConstraints.Exceed:
+            return _exceed_render_summary( auxdata, introduction, summary )
 
 
 def _complect_render_summary(
@@ -461,7 +478,7 @@ def _complect_render_summary(
     prefix_ccount = _count_columns_visual( line_prefix )
     remainder_ccount = auxdata.line_columns_total - prefix_ccount
     lines_final: list[ str ] = [ ]
-    lines = _complect_omni( auxdata, remainder_ccount, summary )
+    lines = _linearize_omni( auxdata, summary, remainder_ccount )
     match len( lines ):
         case 0: raise RuntimeError  # TODO: Appropriate error.
         case 1:
@@ -487,13 +504,24 @@ def _complect_render_summary(
     return '\n'.join( f"{line_prefix}{line}" for line in lines_final )
 
 
-def _exact_render_summary(
+def _exceed_render_summary(
     auxdata: TextualizerState,
     introduction: Introduction,
     summary: _records.MessageSummary,
 ) -> str:
-    # TODO: Implement.
-    return ''
+    # TODO: Consider continuation prefix.
+    configuration = auxdata.configuration
+    line_prefix = configuration.line_prefix
+    lines_final: list[ str ] = [ ]
+    lines = _linearize_omni( auxdata, summary )
+    match len( lines ):
+        case 0: raise RuntimeError  # TODO: Appropriate error.
+        case 1:
+            content = lines[ 0 ]
+            lines_final.append( f"{introduction.text} {content}" )
+        case _:
+            lines_final.extend( ( introduction.text, *lines ) )
+    return '\n'.join( f"{line_prefix}{line}" for line in lines_final )
 
 
 # # TODO: _truncate_text_plain and _truncate_text_rich

@@ -24,11 +24,5 @@ __call__
 Whitespace
 Anywhere
 detail_prefix
-_complect_exception_plain
-_complect_exception_rich
-_complect_object_plain
-_complect_object_rich
-_complect_text_rich
-
 exception_format
-_complect_stacktrace_rich
+_linearize_stacktrace_rich
