@@ -27,6 +27,7 @@ from . import exceptions as _exceptions
 from . import flavors as _flavors
 from . import printers as _printers
 from . import reporters as _reporters
+from . import standard as _standard
 from . import textualizers as _texts
 
 
@@ -36,11 +37,11 @@ _self_modulecfg: _cfg.ModuleConfiguration = _cfg.ModuleConfiguration(
     flavors = __.immut.Dictionary(
         note = _cfg.FlavorConfiguration(
             textualizer_factory = (
-                lambda tcontrol, record: _texts.TextualizerDefault(
+                lambda tcontrol, record: _standard.TextualizerDefault(
                     introducer = 'NOTE| ' ) ) ),
         error = _cfg.FlavorConfiguration(
             textualizer_factory = (
-                lambda tcontrol, record: _texts.TextualizerDefault(
+                lambda tcontrol, record: _standard.TextualizerDefault(
                     introducer = 'ERROR| ' ) ) ) ) )
 _validate_arguments = (
     __.validate_arguments(
@@ -145,7 +146,7 @@ class Dispatcher( __.immut.DataclassObject ):
                 return a callable which takes one argument, the string
                 produced by a formatter.
             ''' ),
-    ] = __.funct.partial( _printers.produce_simple_printer, __.sys.stderr )
+    ] = __.funct.partial( _standard.produce_simple_printer, __.sys.stderr )
     reporters: __.typx.Annotated[
         ReportersRegistry,
         __.typx.Doc(
@@ -664,5 +665,5 @@ def _resolve_printer(
     dispatcher: Dispatcher, mname: str, flavor: _flavors.Flavor
 ) -> _printers.Printer:
     if isinstance( dispatcher.printer_factory, __.io.TextIOBase ):
-        return _printers.SimplePrinter( target = dispatcher.printer_factory )
+        return _standard.SimplePrinter( target = dispatcher.printer_factory )
     return dispatcher.printer_factory( mname, flavor )

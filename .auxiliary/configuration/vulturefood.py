@@ -25,4 +25,4 @@ Whitespace
 Anywhere
 detail_prefix
 exception_format
-_linearize_stacktrace_rich
+linearize_stacktrace_rich

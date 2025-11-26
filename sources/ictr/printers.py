@@ -22,18 +22,9 @@
 
 
 
-import colorama as _colorama
-
 from . import __
-from . import exceptions as _exceptions
 from . import flavors as _flavors
 from . import records as _records
-
-
-_validate_arguments = (
-    __.validate_arguments(
-        globalvars = globals( ),
-        errorclass = _exceptions.ArgumentClassInvalidity ) )
 
 
 ColumnsMaxCalculator: __.typx.TypeAlias = __.typx.Annotated[
@@ -96,53 +87,16 @@ class Printer( __.immut.DataclassProtocol, __.typx.Protocol ):
     # TODO: print_async
 
 
-class SimplePrinter( Printer ):
-    ''' Simple printer that writes to a text stream. '''
-
-    target: __.io.TextIOBase
-    force_color: bool = False
-
-    def __call__( self, record: str | _records.Record ) -> None:
-        text = record if isinstance( record, str ) else str( record )
-        if not self.force_color and not self.target.isatty( ):
-            text = remove_ansi_c1_sequences( text )
-        print( text, file = self.target )
-
-    def provide_textualizer_control(
-        self
-    ) -> __.typx.Optional[ TextualizerControl ]:
-        tty = self.target.isatty( )
-        colorize = tty
-        if __.os.environ.get( 'NO_COLOR' ): colorize = False
-        colorize = colorize or self.force_color
-        columns_max_calculator = _produce_columns_max_calculator( self.target )
-        # TODO: Get encoding from target.
-        return TextualizerControl(
-            colorize = colorize,
-            columns_max_calculator = columns_max_calculator )
-
-
 PrinterFactory: __.typx.TypeAlias = (
     __.cabc.Callable[ [ str, _flavors.Flavor ], Printer ] )
 PrinterFactoryUnion: __.typx.TypeAlias = __.io.TextIOBase | PrinterFactory
 
 
-@_validate_arguments
-def produce_simple_printer(
-    target: __.io.TextIOBase,
-    mname: str,
-    flavor: _flavors.Flavor,
-    force_color: bool = False,
-) -> Printer:
-    ''' Produces printer which uses standard Python 'print'. '''
-    match __.sys.platform:
-        case 'win32':
-            winansi = _colorama.AnsiToWin32( target ) # pyright: ignore
-            target_ = ( # pragma: no cover
-                winansi.stream if winansi.convert else target )
-        case _: target_ = target
-    return SimplePrinter(
-        target = target_, force_color = force_color ) # pyright: ignore
+def count_columns_visual( text: str ) -> int:
+    # Note: If CSI ED ("Erase on Display") or EL ("Erase in Line") sequences
+    #       are used within the text, then the count will not be accurate.
+    text_no_ansi = remove_ansi_c1_sequences( text )
+    return __.wcwidth.wcswidth( text_no_ansi )
 
 
 def remove_ansi_c1_sequences( text: str ) -> str:
@@ -151,7 +105,7 @@ def remove_ansi_c1_sequences( text: str ) -> str:
     return regex.sub( '', text )
 
 
-def _produce_columns_max_calculator(
+def produce_columns_max_calculator(
     target: __.io.TextIOBase
 ) -> ColumnsMaxCalculator:
     fileno = getattr( target, 'fileno', None )
@@ -164,3 +118,15 @@ def _produce_columns_max_calculator(
         return size.columns
 
     return calculate
+
+
+# def truncate_visual( text: str, columns_max: int ) -> str:
+#     lsize = 0
+#     for i, c in enumerate( text ):
+#         csize = __.wcwidth.wcwidth( c )
+#         csize = max( 0, csize )  # control or combining character
+#         if lsize + csize > columns_max:
+#             # TODO? Add ellipsis.
+#             return text[ : i ]
+#         lsize += csize
+#     return text

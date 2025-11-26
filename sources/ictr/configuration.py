@@ -23,6 +23,7 @@
 
 from . import __
 from . import flavors as _flavors
+from . import standard as _standard
 from . import textualizers as _texts
 
 
@@ -112,7 +113,7 @@ class DispatcherConfiguration( __.immut.DataclassObject ):
                 Returns formatter to convert an argument to a string.
             ''' ),
     # TODO: Assign a factory which utilizes record fields.
-    ] = lambda tcontrol, record: _texts.TextualizerDefault( )
+    ] = lambda tcontrol, record: _standard.TextualizerDefault( )
     include_context: __.typx.Annotated[
         bool, __.typx.Doc( ''' Include stack frame with output? ''' )
     ] = False
@@ -123,4 +124,4 @@ def _produce_trace_textualizer_factory(
 ) -> _texts.TextualizerFactory:
     return (
         lambda tcontrol, record:
-        _texts.TextualizerDefault( introducer = f"TRACE{level}| " ) )
+        _standard.TextualizerDefault( introducer = f"TRACE{level}| " ) )

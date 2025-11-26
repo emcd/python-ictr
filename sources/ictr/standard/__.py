@@ -18,21 +18,23 @@
 #============================================================================#
 
 
-''' Non-intrusive system for logging and debug printing. '''
+''' Internal imports for textualizers and their attendants. '''
 
 
-from . import __
-from . import standard
-# --- BEGIN: Injected by Copier ---
-from . import exceptions
-# --- END: Injected by Copier ---
+# ruff: noqa: F401, F403
 
 
-from .printers import *
-from .textualizers import *
+from ..__ import *
+from ..exceptions import *
+from ..flavors import Flavor
+from ..printers import *
+from ..records import *
+from ..textualizers import *
 
-
-__version__ = '1.0a0'
-
-
-# TODO: Reclassify package modules as immutable and concealed.
+ENRICH = False
+try:
+    import rich.console as      rich_console
+    import rich.text as         rich_text
+    import rich.traceback as    rich_traceback
+    ENRICH = True  # pyright: ignore[reportConstantRedefinition]
+except ImportError: pass

@@ -18,21 +18,9 @@
 #============================================================================#
 
 
-''' Non-intrusive system for logging and debug printing. '''
+''' Textualizers, introducers, and various auxiliaries. '''
 
 
-from . import __
-from . import standard
-# --- BEGIN: Injected by Copier ---
-from . import exceptions
-# --- END: Injected by Copier ---
-
-
+from .linearizers import *
 from .printers import *
 from .textualizers import *
-
-
-__version__ = '1.0a0'
-
-
-# TODO: Reclassify package modules as immutable and concealed.
