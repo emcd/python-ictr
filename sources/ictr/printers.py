@@ -36,6 +36,22 @@ _validate_arguments = (
         errorclass = _exceptions.ArgumentClassInvalidity ) )
 
 
+ColumnsMaxCalculator: __.typx.TypeAlias = __.typx.Annotated[
+    __.typx.Union[
+        __.typx.Optional[ int ],
+        __.cabc.Callable[ [ ], __.typx.Optional[ int ] ],
+    ],
+    __.typx.Doc(
+        ''' Available line length of target character screen.
+
+            * May be an integer.
+            * May be ``None`` if indeterminable or irrelevant.
+            * May be a callable which takes no arguments and returns ``None``
+              or an integer. This support terminal resizing, for example.
+        ''' ),
+]
+
+
 class TextualizerControl( __.immut.DataclassObject ):
     ''' Contextual data for formatter and introduction factories. '''
 
@@ -49,13 +65,16 @@ class TextualizerControl( __.immut.DataclassObject ):
     colorize: __.typx.Annotated[
         bool, __.typx.Doc( ''' Colorize textualization? ''' )
     ] = False
-    columns_count: __.typx.Annotated[
-        __.typx.Optional[ int ],
-        __.typx.Doc(
-            ''' Available line length of target character screen.
+    columns_max_calculator: ColumnsMaxCalculator = None
 
-                May be ``None`` if indeterminable or irrelevant. ''' ),
-    ] = None
+    @property
+    def columns_max( self ) -> __.typx.Optional[ int ]:
+        ''' Available line length (maximum columns) of target.
+
+            May be ``None`` if indeterminable or irrelevant.
+        '''
+        calculator = self.columns_max_calculator
+        return calculator( ) if callable( calculator ) else calculator
 
 
 class Printer( __.immut.DataclassProtocol, __.typx.Protocol ):
@@ -96,9 +115,11 @@ class SimplePrinter( Printer ):
         colorize = tty
         if __.os.environ.get( 'NO_COLOR' ): colorize = False
         colorize = colorize or self.force_color
-        # TODO: Detect terminal width if isatty.
+        columns_max_calculator = _produce_columns_max_calculator( self.target )
         # TODO: Get encoding from target.
-        return TextualizerControl( colorize = colorize )
+        return TextualizerControl(
+            colorize = colorize,
+            columns_max_calculator = columns_max_calculator )
 
 
 PrinterFactory: __.typx.TypeAlias = (
@@ -128,3 +149,18 @@ def remove_ansi_c1_sequences( text: str ) -> str:
     # https://stackoverflow.com/a/14693789/14833542
     regex = __.re.compile( r'''\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])''' )
     return regex.sub( '', text )
+
+
+def _produce_columns_max_calculator(
+    target: __.io.TextIOBase
+) -> ColumnsMaxCalculator:
+    fileno = getattr( target, 'fileno', None )
+    if fileno is None: return None
+    if not __.os.isatty( fileno ): return None
+
+    def calculate( ) -> __.typx.Optional[ int ]:
+        try: size = __.shutil.get_terminal_size( fileno )
+        except Exception: return None
+        return size.columns
+
+    return calculate

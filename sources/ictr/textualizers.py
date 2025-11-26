@@ -84,7 +84,7 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
         __.ddoc.Doc(
             ''' How to constrain text which exceeds maximum columns. ''' ),
     ] = ColumnsConstraints.Complect
-    columns_count: __.typx.Annotated[
+    columns_max: __.typx.Annotated[
         __.typx.Optional[ int ],
         __.ddoc.Doc(
             ''' How many columns per line to assume if printer does not tell.
@@ -150,9 +150,9 @@ class TextualizerDefault( Textualizer ):
     def __call__(
         self, control: _printers.TextualizerControl, record: _records.Record
     ) -> str:
-        auxdata = TextualizerState.from_configuration_and_control(
-            self.configuration, control )
         configuration = self.configuration
+        auxdata = TextualizerState(
+            configuration = configuration, control = control )
         content = record.content
         introduction = _render_introduction(
             auxdata, self.introducer, record )
@@ -171,30 +171,20 @@ class TextualizerState( __.immut.DataclassObject ):
 
     configuration: TextualizerConfiguration
     control: _printers.TextualizerControl
-    columns_constraint: ColumnsConstraints
-    infinite_lines: bool
-    line_columns_total: int  # TODO: Convert to dynamic property.
 
-    @classmethod
-    def from_configuration_and_control(
-        cls,
-        configuration: TextualizerConfiguration,
-        control: _printers.TextualizerControl,
-    ) -> __.typx.Self:
-        line_columns_total_nullable = (
-            control.columns_count or configuration.columns_count )
-        infinite_lines = line_columns_total_nullable is None
-        line_columns_total = (
-            __.sys.maxsize if infinite_lines else line_columns_total_nullable )
-        columns_constraint = configuration.columns_constraint
-        if infinite_lines:
-            columns_constraint = ColumnsConstraints.Exceed
-        return cls(
-            configuration = configuration,
-            control = control,
-            columns_constraint = columns_constraint,
-            infinite_lines = infinite_lines,
-            line_columns_total = line_columns_total )
+    @property
+    def columns_constraint( self ) -> ColumnsConstraints:
+        ''' Effective columns constraint for lines. '''
+        if __.is_absent( self.columns_max ): return ColumnsConstraints.Exceed
+        return self.configuration.columns_constraint
+
+    @property
+    def columns_max( self ) -> __.Absential[ int ]:
+        ''' Available line length (maximum columns) of target. '''
+        columns_max = (
+            self.control.columns_max or self.configuration.columns_max )
+        if columns_max is None: return __.absent
+        return columns_max
 
 
 def _count_columns_visual( text: str ) -> int:
@@ -407,8 +397,7 @@ def _produce_rich_console(
     charset = control.charset or ''
     colorize = control.colorize
     columns_max_nullable = (
-        None if auxdata.infinite_lines or __.is_absent( columns_max )
-        else columns_max )
+        None if __.is_absent( columns_max ) else columns_max )
     safe = charset.startswith( 'utf-' )
     return _rich_console.Console(
         file = capture,
@@ -444,7 +433,9 @@ def _render_detail(
         _count_columns_visual( line_prefix ) + detail_prefix_i_ccount )
     match auxdata.columns_constraint:
         case ColumnsConstraints.Complect:
-            remainder_ccount = auxdata.line_columns_total - prefix_ccount
+            remainder_ccount = (
+                __.absent if __.is_absent( auxdata.columns_max )
+                else auxdata.columns_max - prefix_ccount )
         case ColumnsConstraints.Exceed:
             remainder_ccount = __.absent
     lines = iter( _linearize_omni( auxdata, detail, remainder_ccount ) )
@@ -476,16 +467,20 @@ def _complect_render_summary(
     configuration = auxdata.configuration
     line_prefix = configuration.line_prefix
     prefix_ccount = _count_columns_visual( line_prefix )
-    remainder_ccount = auxdata.line_columns_total - prefix_ccount
+    remainder_ccount = (
+        __.absent if __.is_absent( auxdata.columns_max )
+        else auxdata.columns_max - prefix_ccount )
     lines_final: list[ str ] = [ ]
     lines = _linearize_omni( auxdata, summary, remainder_ccount )
     match len( lines ):
         case 0: raise RuntimeError  # TODO: Appropriate error.
         case 1:
             content = lines[ 0 ]
-            incision_point = (
-                    configuration.summary_incision_ratio
-                *   auxdata.line_columns_total )
+            incision_point = 0
+            if not __.is_absent( auxdata.columns_max ):
+                incision_point = (
+                        configuration.summary_incision_ratio
+                    *   auxdata.columns_max )
             isolate_introduction = (
                 incision_point <= introduction.columns_count )
             if not isolate_introduction:
@@ -493,7 +488,7 @@ def _complect_render_summary(
                 candidate_ccount = (
                         prefix_ccount + introduction.columns_count
                     +   _count_columns_visual( content ) + 1 )
-                if candidate_ccount <= auxdata.line_columns_total:
+                if candidate_ccount <= auxdata.columns_max:
                     lines_final.append( candidate )
                 else:
                     lines_final.extend( ( introduction.text, *lines ) )

@@ -35,6 +35,7 @@ import                      locale
 import                      os
 import                      pprint
 import                      re
+import                      shutil
 import                      sys
 import                      textwrap
 import threading as         threads
