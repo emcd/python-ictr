@@ -24,6 +24,32 @@
 from . import __
 
 
+class Auxiliaries( __.immut.DataclassObject ):
+    # TODO? Merge into IntroducerConfiguration.
+    ''' Auxiliary functions used by textualizers and interpolation.
+
+        Typically used by unit tests to inject mock dependencies,
+        but can also be used to deeply customize output.
+    '''
+
+    exc_info_discoverer: __.typx.Annotated[
+        __.typx.Callable[ [ ], __.ExceptionInfo ],
+        __.ddoc.Doc( ''' Returns information on current exception. ''' ),
+    ] = __.sys.exc_info
+    pid_discoverer: __.typx.Annotated[
+        __.typx.Callable[ [ ], int ],
+        __.ddoc.Doc( ''' Returns ID of current process. ''' ),
+    ] = __.os.getpid
+    thread_discoverer: __.typx.Annotated[
+        __.typx.Callable[ [ ], __.threads.Thread ],
+        __.ddoc.Doc( ''' Returns current thread. ''' ),
+    ] = __.threads.current_thread
+    time_formatter: __.typx.Annotated[
+        __.typx.Callable[ [ str ], str ],
+        __.ddoc.Doc( ''' Returns current time in specified format. ''' ),
+    ] = __.time.strftime
+
+
 class ColumnsConstraints( __.enum.Enum ):
     ''' How to constrain text which exceeds maximum columns. '''
 
@@ -39,6 +65,83 @@ class IncisionBoundaries( __.enum.Enum ):
     Whitespace  = __.enum.auto( )  # horizontal spaces and tabs
     Wordsplits  = __.enum.auto( )  # hyphens + whitespace
     Anywhere    = __.enum.auto( )
+
+
+class Style( __.immut.DataclassObject ):
+    ''' Style for text. Corresponds to terminal attributes. '''
+
+    bgcolor: __.typx.Optional[ str ] = None
+    fgcolor: __.typx.Optional[ str ] = None
+    # TODO: Int flag enum for bold, blink, etc...
+
+
+InterpolantsStylesRegistry: __.typx.TypeAlias = (
+    __.accret.Dictionary[ str, Style ] )
+
+
+class IntroductionDecors( __.enum.IntFlag ):
+    ''' Decoration styles for introductions. '''
+
+    Plain =     0
+    Color =     __.enum.auto( )
+    Emoji =     __.enum.auto( )
+
+
+class LabelPresentations( __.enum.IntFlag ):
+    ''' How introduction labels should be presented. '''
+
+    Nothing =   0
+    Words =     __.enum.auto( )
+    Emoji =     __.enum.auto( )
+
+
+class IntroducerConfiguration( __.immut.DataclassObject ):
+    ''' Behaviors and format for text from standard introducer. '''
+
+    colorize: __.typx.Annotated[
+        bool, __.typx.Doc( ''' Attempt to colorize? ''' )
+    ] = True
+    label_as: __.typx.Annotated[
+        LabelPresentations,
+        __.ddoc.Doc(
+            ''' How to present prefix label.
+
+                ``Words``: As words like ``TRACE0`` or ``ERROR``.
+                ``Emoji``: As emoji like ``🔎`` or ``❌``.
+
+                For both emoji and words: ``Emoji | Words``.
+            ''' )
+    ] = LabelPresentations.Words
+    styles: __.typx.Annotated[
+        InterpolantsStylesRegistry,
+        __.ddoc.Doc(
+            ''' Mapping of interpolant names to style objects.
+
+                Ignored if not using ``rich``.
+            ''' ),
+    ] = __.dcls.field( default_factory = InterpolantsStylesRegistry )
+    template: __.typx.Annotated[
+        str,
+        __.ddoc.Doc(
+            ''' String format for prefix.
+
+                The following interpolants are supported:
+                ``flavor``: Decorated flavor.
+                ``module_qname``: Qualified name of invoking module.
+                ``timestamp``: Current timestamp, formatted as string.
+                ``process_id``: ID of current process according to OS kernel.
+                ``thread_id``: ID of current thread.
+                ``thread_name``: Name of current thread.
+            ''' ),
+    ] = "{flavor}| " # "{timestamp} [{module_qname}] {flavor}| "
+    ts_format: __.typx.Annotated[
+        str,
+        __.ddoc.Doc(
+            ''' String format for prefix timestamp.
+
+                Used by :py:func:`time.strftime` or equivalent.
+            ''' ),
+    ] = '%Y-%m-%d %H:%M:%S.%f'
 
 
 class TextualizerConfiguration( __.immut.DataclassObject ):
@@ -116,3 +219,8 @@ class TextualizerState( __.immut.DataclassObject ):
             self.control.columns_max or self.configuration.columns_max )
         if columns_max is None: return __.absent
         return columns_max
+
+
+AUXILIARIES_DEFAULT = Auxiliaries( )
+INTRODUCER_CONFIGURATION_DEFAULT = IntroducerConfiguration( )
+TEXTUALIZER_CONFIGURATION_DEFAULT = TextualizerConfiguration( )

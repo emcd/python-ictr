@@ -26,10 +26,18 @@ from . import printers as _printers
 from . import records as _records
 
 
-IntroducerFunction: __.typx.TypeAlias = (
-    __.typx.Callable[
-        [ _printers.TextualizerControl, _records.Record ], str ] )
-Introducer: __.typx.TypeAlias = str | IntroducerFunction
+class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
+    ''' Abstract base class for introducers. '''
+
+    @__.abc.abstractmethod
+    def __call__(
+        self, control: _printers.TextualizerControl, record: _records.Record
+    ) -> str:
+        ''' Renders record as text label. '''
+        raise NotImplementedError
+
+
+IntroducerUnion: __.typx.TypeAlias = str | Introducer
 
 
 class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
@@ -39,7 +47,7 @@ class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
     def __call__(
         self, control: _printers.TextualizerControl, record: _records.Record
     ) -> str:
-        ''' Renders a record as text. '''
+        ''' Renders record as text. '''
         raise NotImplementedError
 
 
@@ -49,7 +57,7 @@ TextualizerFactory: __.typx.TypeAlias = (
 
 
 def produce_textualizer_factory_default(
-    introducer: __.Absential[ Introducer ] = __.absent
+    introducer: __.Absential[ IntroducerUnion ] = __.absent
 ) -> TextualizerFactory:
     ''' Produces default textualizer factory.
 

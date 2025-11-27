@@ -319,7 +319,7 @@ InstallAliasArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' Alias under which the dispatcher is installed in builtins. ''' ),
 ]
 IntroducerArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ _texts.Introducer ],
+    __.Absential[ _texts.IntroducerUnion ],
     __.typx.Doc(
         ''' String or factory which produces message introduction.
 

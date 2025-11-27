@@ -32,10 +32,10 @@ class FlavorConfiguration( __.immut.DataclassObject ):
     textualizer_factory: __.typx.Annotated[
         __.typx.Optional[ _texts.TextualizerFactory ],
         __.typx.Doc(
-            ''' Factory which produces formatter callable.
+            ''' Factory which produces textualizer callable.
 
-                Takes formatter control, module name, and flavor as arguments.
-                Returns formatter to convert an argument to a string.
+                Takes textualizer control, address, and flavor as arguments.
+                Returns textualizer.
 
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
@@ -50,20 +50,28 @@ class FlavorConfiguration( __.immut.DataclassObject ):
     ] = None
 
 
-def produce_default_flavors( ) -> __.immut.Dictionary[
-    _flavors.Flavor, FlavorConfiguration
-]:
-    ''' Produces flavors for trace depths 0 through 9. '''
-    return __.immut.Dictionary( {
-        i: FlavorConfiguration(
-            textualizer_factory = _produce_trace_textualizer_factory( i ) )
-                for i in range( 10 ) } )
-
-
 FlavorsRegistry: __.typx.TypeAlias = (
     __.immut.Dictionary[ _flavors.Flavor, FlavorConfiguration ] )
 FlavorsRegistryLiberal: __.typx.TypeAlias = (
     __.cabc.Mapping[ _flavors.Flavor, FlavorConfiguration ] )
+
+
+def produce_flavors_default( ) -> FlavorsRegistry:
+    ''' Produces registry of all standard flavors without customization. '''
+    flavors: FlavorsRegistryLiberal = { }
+    for name, spec in _flavors.flavor_specifications_standard.items( ):
+        tfactory = _texts.produce_textualizer_factory_default(
+            introducer = f"{spec.label}| " )
+        flavors[ name ] = FlavorConfiguration(
+            textualizer_factory = tfactory )
+    for alias, name in _flavors.flavor_aliases_standard.items( ):
+        flavors[ alias ] = flavors[ name ]
+    for level in range( 10 ):
+        tfactory = _texts.produce_textualizer_factory_default(
+            introducer = f"TRACE{level}| " )
+        flavors[ level ] = FlavorConfiguration(
+            textualizer_factory = tfactory )
+    return __.immut.Dictionary( flavors )
 
 
 class ModuleConfiguration( __.immut.DataclassObject ):
@@ -77,10 +85,10 @@ class ModuleConfiguration( __.immut.DataclassObject ):
     textualizer_factory: __.typx.Annotated[
         __.typx.Optional[ _texts.TextualizerFactory ],
         __.typx.Doc(
-            ''' Factory which produces formatter callable.
+            ''' Factory which produces textualizer callable.
 
-                Takes formatter control, module name, and flavor as arguments.
-                Returns formatter to convert an argument to a string.
+                Takes textualizer control, address, and flavor as arguments.
+                Returns textualizer.
 
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
@@ -102,24 +110,16 @@ class DispatcherConfiguration( __.immut.DataclassObject ):
         FlavorsRegistry,
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
-    ] = __.dcls.field( default_factory = produce_default_flavors )
+    ] = __.dcls.field( default_factory = produce_flavors_default )
     textualizer_factory: __.typx.Annotated[
         _texts.TextualizerFactory,
         __.typx.Doc(
-            ''' Factory which produces formatter callable.
+            ''' Factory which produces textualizer callable.
 
-                Takes formatter control, module name, and flavor as arguments.
-                Returns formatter to convert an argument to a string.
+                Takes textualizer control, address, and flavor as arguments.
+                Returns textualizer.
             ''' ),
     ] = _texts.produce_textualizer_factory_default( )
     include_context: __.typx.Annotated[
         bool, __.typx.Doc( ''' Include stack frame with output? ''' )
     ] = False
-
-
-def _produce_trace_textualizer_factory(
-    level: int
-) -> _texts.TextualizerFactory:
-    return (
-        _texts.produce_textualizer_factory_default(
-            introducer = f"TRACE{level}| " ) )

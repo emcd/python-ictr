@@ -25,3 +25,50 @@ from . import __
 
 
 Flavor: __.typx.TypeAlias = int | str
+
+
+class StandardFlavorSpecification( __.immut.DataclassObject ):
+    ''' Specification for standard flavor. '''
+
+    color: __.typx.Annotated[
+        str, __.ddoc.Doc( ''' Name of introduction color. ''' ) ]
+    emoji: __.typx.Annotated[ str, __.ddoc.Doc( ''' Introduction emoji. ''' ) ]
+    label: __.typx.Annotated[ str, __.ddoc.Doc( ''' Introduction label. ''' ) ]
+    stack: __.typx.Annotated[
+        bool, __.ddoc.Doc( ''' Include stack trace? ''' )
+    ] = False
+
+
+flavor_aliases_standard: __.immut.Dictionary[
+    str, str
+] = __.immut.Dictionary( {
+    'n': 'note', 'm': 'monition',
+    'e': 'error', 'a': 'abort',
+    'ex': 'errorx', 'ax': 'abortx',
+    'f': 'future', 's': 'success',
+} )
+
+flavor_specifications_standard: __.immut.Dictionary[
+    str, StandardFlavorSpecification
+] = __.immut.Dictionary(
+    note = StandardFlavorSpecification(
+        color = 'blue',
+        emoji = '\N{Information Source}\ufe0f',
+        label = 'NOTE' ),
+    monition = StandardFlavorSpecification(
+        color = 'yellow',
+        emoji = '\N{Warning Sign}\ufe0f',
+        label = 'MONITION' ),
+    error = StandardFlavorSpecification(
+        color = 'red', emoji = '❌', label = 'ERROR' ),
+    errorx = StandardFlavorSpecification(
+        color = 'red', emoji = '❌', label = 'ERROR', stack = True ),
+    abort = StandardFlavorSpecification(
+        color = 'bright_red', emoji = '💥', label = 'ABORT' ),
+    abortx = StandardFlavorSpecification(
+        color = 'bright_red', emoji = '💥', label = 'ABORT', stack = True ),
+    future = StandardFlavorSpecification(
+        color = 'magenta', emoji = '🔮', label = 'FUTURE' ),
+    success = StandardFlavorSpecification(
+        color = 'green', emoji = '✅', label = 'SUCCESS' ),
+)

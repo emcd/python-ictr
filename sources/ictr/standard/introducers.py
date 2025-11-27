@@ -18,24 +18,31 @@
 #============================================================================#
 
 
-''' Internal imports for textualizers and their attendants. '''
+''' Standard introducer with support for decorations and styles. '''
 
 
-# ruff: noqa: F401, F403
+from . import __
+from . import core as _core
 
 
-from ..__ import *
-from ..configuration import *
-from ..exceptions import *
-from ..flavors import *
-from ..printers import *
-from ..records import *
-from ..textualizers import *
+class Introducer( __.Introducer ):
+    ''' Standard introducer. '''
 
-ENRICH = False
-try:
-    import rich.console as      rich_console
-    import rich.text as         rich_text
-    import rich.traceback as    rich_traceback
-    ENRICH = True  # pyright: ignore[reportConstantRedefinition]
-except ImportError: pass
+    configuration: __.typx.Annotated[
+        _core.IntroducerConfiguration,
+        __.ddoc.Doc(
+            ''' Default behaviors and format for introductory text. ''' ),
+    ] = __.dcls.field( default_factory = _core.IntroducerConfiguration )
+
+    def __call__(
+        self, control: __.TextualizerControl, record: __.Record
+    ) -> str:
+        # TODO: Implement.
+        return ''
+
+
+class Introduction( __.immut.DataclassObject ):
+    ''' Structure for introduction. '''
+
+    text: str
+    columns_count: int  # visible

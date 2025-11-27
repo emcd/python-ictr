@@ -18,20 +18,14 @@
 #============================================================================#
 
 
-''' Standard textualizer and introducer. '''
+''' Standard textualizer and renderers. '''
 
 
 from . import __
 from . import core as _core
 
+from .introducers import Introduction as _Introduction
 from .linearizers import linearize_omni as _linearize_omni
-
-
-class Introduction( __.immut.DataclassObject ):
-    ''' Structure for introduction. '''
-
-    text: str
-    columns_count: int  # visible
 
 
 class Textualizer( __.Textualizer ):
@@ -42,7 +36,7 @@ class Textualizer( __.Textualizer ):
         __.ddoc.Doc( ''' Default behaviors and format for text. ''' ),
     ] = __.dcls.field( default_factory = _core.TextualizerConfiguration )
     introducer: __.typx.Annotated[
-        __.Introducer,
+        __.IntroducerUnion,
         __.ddoc.Doc(
             ''' String or factory which produces introduction string.
 
@@ -58,8 +52,7 @@ class Textualizer( __.Textualizer ):
         auxdata = _core.TextualizerState(
             configuration = configuration, control = control )
         content = record.content
-        introduction = _render_introduction(
-            auxdata, self.introducer, record )
+        introduction = _render_introduction( auxdata, self.introducer, record )
         if isinstance( content, __.MessageContent ):
             summary = _render_summary( auxdata, introduction, content.summary )
             details = tuple(
@@ -72,14 +65,14 @@ class Textualizer( __.Textualizer ):
 
 def _render_introduction(
     auxdata: _core.TextualizerState,
-    introducer: __.Introducer,
+    introducer: __.IntroducerUnion,
     record: __.Record,
-) -> Introduction:
+) -> _Introduction:
     text = (
         introducer if isinstance( introducer, str )
         else introducer( auxdata.control, record ) )
     columns_count = __.count_columns_visual( text )
-    return Introduction( text = text, columns_count = columns_count )
+    return _Introduction( text = text, columns_count = columns_count )
 
 
 def _render_detail(
@@ -111,7 +104,7 @@ def _render_detail(
 
 def _render_summary(
     auxdata: _core.TextualizerState,
-    introduction: Introduction,
+    introduction: _Introduction,
     summary: __.MessageSummary,
 ) -> str:
     match auxdata.columns_constraint:
@@ -123,7 +116,7 @@ def _render_summary(
 
 def _complect_render_summary(
     auxdata: _core.TextualizerState,
-    introduction: Introduction,
+    introduction: _Introduction,
     summary: __.MessageSummary,
 ) -> str:
     # TODO: Consider continuation prefix.
@@ -164,7 +157,7 @@ def _complect_render_summary(
 
 def _exceed_render_summary(
     auxdata: _core.TextualizerState,
-    introduction: Introduction,
+    introduction: _Introduction,
     summary: __.MessageSummary,
 ) -> str:
     # TODO: Consider continuation prefix.
