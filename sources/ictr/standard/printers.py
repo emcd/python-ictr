@@ -21,8 +21,6 @@
 ''' Printers and printer factories. '''
 
 
-import colorama as _colorama
-
 from . import __
 
 
@@ -57,21 +55,3 @@ class SimplePrinter( __.Printer ):
         return __.TextualizerControl(
             colorize = colorize,
             columns_max_calculator = columns_max_calculator )
-
-
-@_validate_arguments
-def produce_simple_printer(
-    target: __.io.TextIOBase,
-    mname: str,
-    flavor: __.Flavor,
-    force_color: bool = False,
-) -> __.Printer:
-    ''' Produces printer which uses standard Python 'print'. '''
-    match __.sys.platform:
-        case 'win32':
-            winansi = _colorama.AnsiToWin32( target ) # pyright: ignore
-            target_ = ( # pragma: no cover
-                winansi.stream if winansi.convert else target )
-        case _: target_ = target
-    return SimplePrinter(
-        target = target_, force_color = force_color ) # pyright: ignore

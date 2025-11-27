@@ -46,3 +46,22 @@ class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
 TextualizerFactory: __.typx.TypeAlias = (
     __.typx.Callable[
         [ _printers.TextualizerControl, _records.Record ], Textualizer ] )
+
+
+def produce_textualizer_factory_default(
+    introducer: __.Absential[ Introducer ] = __.absent
+) -> TextualizerFactory:
+    ''' Produces default textualizer factory.
+
+        Can optionally be associated with a particular introducer.
+    '''
+    def produce_textualizer(
+        control: _printers.TextualizerControl, record: _records.Record
+    ) -> Textualizer:
+        from .standard import TextualizerDefault
+        # TODO? Utilize record fields.
+        if __.is_absent( introducer ):
+            return TextualizerDefault( )
+        return TextualizerDefault( introducer = introducer )
+
+    return produce_textualizer

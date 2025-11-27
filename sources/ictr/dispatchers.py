@@ -27,7 +27,6 @@ from . import exceptions as _exceptions
 from . import flavors as _flavors
 from . import printers as _printers
 from . import reporters as _reporters
-from . import standard as _standard
 from . import textualizers as _texts
 
 
@@ -37,11 +36,11 @@ _self_modulecfg: _cfg.ModuleConfiguration = _cfg.ModuleConfiguration(
     flavors = __.immut.Dictionary(
         note = _cfg.FlavorConfiguration(
             textualizer_factory = (
-                lambda tcontrol, record: _standard.TextualizerDefault(
+                _texts.produce_textualizer_factory_default(
                     introducer = 'NOTE| ' ) ) ),
         error = _cfg.FlavorConfiguration(
             textualizer_factory = (
-                lambda tcontrol, record: _standard.TextualizerDefault(
+                _texts.produce_textualizer_factory_default(
                     introducer = 'ERROR| ' ) ) ) ) )
 _validate_arguments = (
     __.validate_arguments(
@@ -94,7 +93,8 @@ TraceLevelsRegistryLiberal: __.typx.TypeAlias = (
 
 builtins_alias_default: __.typx.Annotated[
     str,
-    __.typx.Doc( ''' Default alias for global truck in builtins module. ''' ),
+    __.typx.Doc(
+        ''' Default alias for global dispatcher in builtins module. ''' ),
 ] = 'ictr'
 modulecfgs: __.typx.Annotated[
     ModulesConfigurationsRegistry,
@@ -146,7 +146,7 @@ class Dispatcher( __.immut.DataclassObject ):
                 return a callable which takes one argument, the string
                 produced by a formatter.
             ''' ),
-    ] = __.funct.partial( _standard.produce_simple_printer, __.sys.stderr )
+    ] = _printers.produce_printer_factory_default( __.sys.stderr )
     reporters: __.typx.Annotated[
         ReportersRegistry,
         __.typx.Doc(
@@ -171,33 +171,33 @@ class Dispatcher( __.immut.DataclassObject ):
     def __call__(
         self,
         flavor: _flavors.Flavor, *,
-        module_name: __.Absential[ str ] = __.absent,
+        address: __.Absential[ str ] = __.absent,
     ) -> _reporters.Reporter:
         ''' Produces and caches message reporter. '''
-        mname = (
-            _discover_invoker_module_name( ) if __.is_absent( module_name )
-            else module_name )
-        cache_index = ( mname, flavor )
+        address = (
+            _discover_invoker_module_name( ) if __.is_absent( address )
+            else address )
+        cache_index = ( address, flavor )
         if cache_index in self.reporters:
             with self.reporters_mutex:
                 return self.reporters[ cache_index ]
-        configuration = _produce_ic_configuration( self, mname, flavor )
+        configuration = _produce_ic_configuration( self, address, flavor )
         control = _printers.TextualizerControl( )
         if isinstance( flavor, int ):
             trace_level = (
-                _calculate_effective_trace_level( self.trace_levels, mname) )
+                _calculate_effective_trace_level( self.trace_levels, address) )
             active = flavor <= trace_level
         elif isinstance( flavor, str ): # pragma: no branch
             active_flavors = (
-                _calculate_effective_flavors( self.active_flavors, mname ) )
+                _calculate_effective_flavors( self.active_flavors, address ) )
             active = (
                 isinstance( active_flavors, Omniflavor )
                 or flavor in active_flavors )
         formatter = configuration[ 'formatter_factory' ](
-            control, mname, flavor )
-        printer = _resolve_printer( self, mname, flavor )
+            control, address, flavor )
+        printer = _resolve_printer( self, address, flavor )
         reporter = _reporters.Reporter(
-            active = active, address = mname, flavor = flavor,
+            active = active, address = address, flavor = flavor,
             textualizer = formatter, printer = printer )
         with self.reporters_mutex:
             self.reporters[ cache_index ] = reporter
@@ -205,18 +205,19 @@ class Dispatcher( __.immut.DataclassObject ):
 
     @_validate_arguments
     def install( self, alias: str = builtins_alias_default ) -> __.typx.Self:
-        ''' Installs truck into builtins with provided alias.
+        ''' Installs dispatcher into builtins with provided alias.
 
-            Replaces an existing truck. Preserves global module configurations.
+            Replaces an existing dispatcher. Preserves global module
+            configurations.
 
             Library developers should call :py:func:`register_module` instead.
         '''
         import builtins
         with _installer_mutex:
-            truck_o = getattr( builtins, alias, None )
-            if isinstance( truck_o, Dispatcher ):
+            dispatcher_o = getattr( builtins, alias, None )
+            if isinstance( dispatcher_o, Dispatcher ):
                 self( 'note', module_name = __name__ )(
-                    'Installed truck is being replaced.' )
+                    'Installed dispatcher is being replaced.' )
                 setattr( builtins, alias, self )
             else:
                 __.install_builtin_safely(
@@ -302,7 +303,7 @@ FormatterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
 GeneralcfgArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ _cfg.DispatcherConfiguration ],
     __.typx.Doc(
-        ''' General configuration for the truck.
+        ''' General configuration for the dispatcher.
 
             Top of configuration inheritance hierarchy. If absent,
             defaults to a suitable configuration for application use.
@@ -337,7 +338,7 @@ ModuleNameArgument: __.typx.TypeAlias = __.typx.Annotated[
 ModulecfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ ModulesConfigurationsRegistryLiberal ],
     __.typx.Doc(
-        ''' Module configurations for the truck.
+        ''' Module configurations for the dispatcher.
 
             If absent, defaults to global modules registry.
         ''' ),
@@ -378,16 +379,16 @@ def active_flavors_from_environment(
     for part in value.split( '+' ):
         if not part: continue
         if ':' in part:
-            mname, flavors = part.split( ':', 1 )
-        else: mname, flavors = None, part
+            address, flavors = part.split( ':', 1 )
+        else: address, flavors = None, part
         match flavors:
-            case '*': active_flavors[ mname ] = omniflavor
-            case _: active_flavors[ mname ] = flavors.split( ',' )
+            case '*': active_flavors[ address ] = omniflavor
+            case _: active_flavors[ address ] = flavors.split( ',' )
     return __.immut.Dictionary( {
-        mname:
+        address:
             flavors if isinstance( flavors, Omniflavor )
             else frozenset( flavors )
-        for mname, flavors in active_flavors.items( ) } )
+        for address, flavors in active_flavors.items( ) } )
 
 
 def trace_levels_from_environment(
@@ -399,14 +400,14 @@ def trace_levels_from_environment(
     value = __.os.getenv( name, '' )
     for part in value.split( '+' ):
         if not part: continue
-        if ':' in part: mname, level = part.split( ':', 1 )
-        else: mname, level = None, part
+        if ':' in part: address, level = part.split( ':', 1 )
+        else: address, level = None, part
         if not level.isdigit( ):
             __.warnings.warn(
                 f"Non-integer trace level {level!r} "
                 f"in environment variable {name!r}." )
             continue
-        trace_levels[ mname ] = int( level )
+        trace_levels[ address ] = int( level )
     return __.immut.Dictionary( trace_levels )
 
 
@@ -420,20 +421,21 @@ def install( # noqa: PLR0913
     evname_active_flavors: EvnActiveFlavorsArgument = __.absent,
     evname_trace_levels: EvnTraceLevelsArgument = __.absent,
 ) -> Dispatcher:
-    ''' Produces truck and installs it into builtins with alias.
+    ''' Produces dispatcher and installs it into builtins with alias.
 
-        Replaces an existing truck, preserving global module configurations.
+        Replaces an existing dispatcher, preserving global module
+        configurations.
 
         Library developers should call :py:func:`register_module` instead.
     '''
-    truck = produce_dispatcher(
+    dispatcher = produce_dispatcher(
         active_flavors = active_flavors,
         generalcfg = generalcfg,
         printer_factory = printer_factory,
         trace_levels = trace_levels,
         evname_active_flavors = evname_active_flavors,
         evname_trace_levels = evname_trace_levels )
-    return truck.install( alias = alias )
+    return dispatcher.install( alias = alias )
 
 
 @_validate_arguments
@@ -454,13 +456,13 @@ def produce_dispatcher( # noqa: PLR0913
         initargs[ 'generalcfg' ] = generalcfg
     if not __.is_absent( modulecfgs ):
         initargs[ 'modulecfgs' ] = ModulesConfigurationsRegistry(
-            {   mname: configuration for mname, configuration
+            {   address: configuration for address, configuration
                 in modulecfgs.items( ) } )
     if not __.is_absent( printer_factory ):
         initargs[ 'printer_factory' ] = printer_factory
-    _add_truck_initarg_active_flavors(
+    _add_dispatcher_initarg_active_flavors(
         initargs, active_flavors, evname_active_flavors )
-    _add_truck_initarg_trace_levels(
+    _add_dispatcher_initarg_trace_levels(
         initargs, trace_levels, evname_trace_levels )
     return Dispatcher( **initargs )
 
@@ -473,9 +475,9 @@ def register_module(
     include_context: IncludeContextArgument = __.absent,
     prefix_emitter: IntroducerArgument = __.absent,
 ) -> _cfg.ModuleConfiguration:
-    ''' Registers module configuration on the builtin truck.
+    ''' Registers module configuration on the builtin dispatcher.
 
-        If no truck exists in builtins, installs one which produces null
+        If no dispatcher exists in builtins, installs one which produces null
         printers.
 
         Intended for library developers to configure debugging flavors
@@ -483,12 +485,12 @@ def register_module(
         Application developers should call :py:func:`install` instead.
     '''
     import builtins
-    truck = getattr( builtins, builtins_alias_default, None )
-    if not isinstance( truck, Dispatcher ):
-        truck = Dispatcher( )
+    dispatcher = getattr( builtins, builtins_alias_default, None )
+    if not isinstance( dispatcher, Dispatcher ):
+        dispatcher = Dispatcher( )
         __.install_builtin_safely(
             builtins_alias_default,
-            truck,
+            dispatcher,
             _exceptions.AttributeNondisplacement )
     nomargs: dict[ str, __.typx.Any ] = { }
     if not __.is_absent( flavors ):
@@ -500,10 +502,11 @@ def register_module(
     if not __.is_absent( prefix_emitter ):
         nomargs[ 'prefix_emitter' ] = prefix_emitter
     configuration = _cfg.ModuleConfiguration( **nomargs )
-    return truck.register_module( name = name, configuration = configuration )
+    return dispatcher.register_module(
+        name = name, configuration = configuration )
 
 
-def _add_truck_initarg_active_flavors(
+def _add_dispatcher_initarg_active_flavors(
     initargs: dict[ str, __.typx.Any ],
     active_flavors: ActiveFlavorsArgument = __.absent,
     evname_active_flavors: EvnActiveFlavorsArgument = __.absent,
@@ -518,16 +521,16 @@ def _add_truck_initarg_active_flavors(
                 { None: frozenset( active_flavors ) } )
         else:
             initargs[ name ] = __.immut.Dictionary( {
-                mname:
+                address:
                     flavors if isinstance( flavors, Omniflavor )
                     else frozenset( flavors )
-                for mname, flavors in active_flavors.items( ) } )
+                for address, flavors in active_flavors.items( ) } )
     elif evname_active_flavors is not None:
         initargs[ name ] = (
             active_flavors_from_environment( evname = evname_active_flavors ) )
 
 
-def _add_truck_initarg_trace_levels(
+def _add_dispatcher_initarg_trace_levels(
     initargs: dict[ str, __.typx.Any ],
     trace_levels: TraceLevelsArgument = __.absent,
     evname_trace_levels: EvnTraceLevelsArgument = __.absent,
@@ -546,50 +549,27 @@ def _add_truck_initarg_trace_levels(
 
 
 def _calculate_effective_flavors(
-    flavors: ActiveFlavorsRegistry, mname: str
+    flavors: ActiveFlavorsRegistry, address: str
 ) -> ActiveFlavors:
     result_ = flavors.get( None ) or frozenset( )
     if isinstance( result_, Omniflavor ): return result_
     result = result_
-    for mname_ in _iterate_module_name_ancestry( mname ):
-        if mname_ in flavors:
-            result_ = flavors.get( mname_ ) or frozenset( )
+    for address_ in _iterate_module_name_ancestry( address ):
+        if address_ in flavors:
+            result_ = flavors.get( address_ ) or frozenset( )
             if isinstance( result_, Omniflavor ): return result_
             result |= result_
     return result
 
 
 def _calculate_effective_trace_level(
-    levels: TraceLevelsRegistry, mname: str
+    levels: TraceLevelsRegistry, address: str
 ) -> int:
     result = levels.get( None, -1 )
-    for mname_ in _iterate_module_name_ancestry( mname ):
-        if mname_ in levels:
-            result = levels[ mname_ ]
+    for address_ in _iterate_module_name_ancestry( address ):
+        if address_ in levels:
+            result = levels[ address_ ]
     return result
-
-
-# def _calculate_ic_initargs(
-#     dispatcher: Dispatcher,
-#     configuration: __.immut.Dictionary[ str, __.typx.Any ],
-#     control: _cfg.FormatterControl,
-#     mname: str,
-#     flavor: _cfg.Flavor,
-# ) -> dict[ str, __.typx.Any ]:
-#     nomargs: dict[ str, __.typx.Any ] = { }
-#     nomargs[ 'argToStringFunction' ] = (
-#         configuration[ 'formatter_factory' ]( control, mname, flavor ) )
-#     nomargs[ 'includeContext' ] = configuration[ 'include_context' ]
-#     if isinstance( dispatcher.printer_factory, __.io.TextIOBase ):
-#         printer = __.funct.partial(
-#            print, file = dispatcher.printer_factory )
-#     else: printer = dispatcher.printer_factory( mname, flavor )
-#     nomargs[ 'outputFunction' ] = printer
-#     prefix_emitter = configuration[ 'prefix_emitter' ]
-#     nomargs[ 'prefix' ] = (
-#         prefix_emitter if isinstance( prefix_emitter, str )
-#         else prefix_emitter( mname, flavor ) )
-#     return nomargs
 
 
 def _dict_from_dataclass( objct: object ) -> dict[ str, __.typx.Any ]:
@@ -637,19 +617,19 @@ def _merge_ic_configuration(
 
 
 def _produce_ic_configuration(
-    vehicle: Dispatcher, mname: str, flavor: _flavors.Flavor
+    dispatcher: Dispatcher, address: str, flavor: _flavors.Flavor
 ) -> __.immut.Dictionary[ str, __.typx.Any ]:
     fconfigs: list[ _cfg.FlavorConfiguration ] = [ ]
-    vconfig = vehicle.generalcfg
+    dconfig = dispatcher.generalcfg
     configd: dict[ str, __.typx.Any ] = {
-        field.name: getattr( vconfig, field.name )
-        for field in __.dcls.fields( vconfig )
+        field.name: getattr( dconfig, field.name )
+        for field in __.dcls.fields( dconfig )
         if not field.name.startswith( '_' ) }
-    if flavor in vconfig.flavors:
-        fconfigs.append( vconfig.flavors[ flavor ] )
-    for mname_ in _iterate_module_name_ancestry( mname ):
-        if mname_ not in vehicle.modulecfgs: continue
-        mconfig = vehicle.modulecfgs[ mname_ ]
+    if flavor in dconfig.flavors:
+        fconfigs.append( dconfig.flavors[ flavor ] )
+    for address_ in _iterate_module_name_ancestry( address ):
+        if address_ not in dispatcher.modulecfgs: continue
+        mconfig = dispatcher.modulecfgs[ address_ ]
         configd = _merge_ic_configuration( configd, mconfig )
         if flavor in mconfig.flavors:
             fconfigs.append( mconfig.flavors[ flavor ] )
@@ -662,8 +642,9 @@ def _produce_ic_configuration(
 
 
 def _resolve_printer(
-    dispatcher: Dispatcher, mname: str, flavor: _flavors.Flavor
+    dispatcher: Dispatcher, address: str, flavor: _flavors.Flavor
 ) -> _printers.Printer:
+    from .standard import SimplePrinter
     if isinstance( dispatcher.printer_factory, __.io.TextIOBase ):
-        return _standard.SimplePrinter( target = dispatcher.printer_factory )
-    return dispatcher.printer_factory( mname, flavor )
+        return SimplePrinter( target = dispatcher.printer_factory )
+    return dispatcher.printer_factory( address, flavor )

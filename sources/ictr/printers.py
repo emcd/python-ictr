@@ -21,10 +21,18 @@
 ''' Printers, printer factories, and auxiliary functions and types. '''
 
 
+import colorama as _colorama
 
 from . import __
+from . import exceptions as _exceptions
 from . import flavors as _flavors
 from . import records as _records
+
+
+_validate_arguments = (
+    __.validate_arguments(
+        globalvars = globals( ),
+        errorclass = _exceptions.ArgumentClassInvalidity ) )
 
 
 ColumnsMaxCalculator: __.typx.TypeAlias = __.typx.Annotated[
@@ -92,6 +100,7 @@ PrinterFactory: __.typx.TypeAlias = (
 PrinterFactoryUnion: __.typx.TypeAlias = __.io.TextIOBase | PrinterFactory
 
 
+@_validate_arguments
 def count_columns_visual( text: str ) -> int:
     # Note: If CSI ED ("Erase on Display") or EL ("Erase in Line") sequences
     #       are used within the text, then the count will not be accurate.
@@ -99,12 +108,14 @@ def count_columns_visual( text: str ) -> int:
     return __.wcwidth.wcswidth( text_no_ansi )
 
 
+@_validate_arguments
 def remove_ansi_c1_sequences( text: str ) -> str:
     # https://stackoverflow.com/a/14693789/14833542
     regex = __.re.compile( r'''\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])''' )
     return regex.sub( '', text )
 
 
+@_validate_arguments
 def produce_columns_max_calculator(
     target: __.io.TextIOBase
 ) -> ColumnsMaxCalculator:
@@ -118,6 +129,30 @@ def produce_columns_max_calculator(
         return size.columns
 
     return calculate
+
+
+@_validate_arguments
+def produce_printer_factory_default(
+    target: __.io.TextIOBase,
+    force_color: bool = False,
+) -> PrinterFactory:
+    ''' Produces default printer factory associated with a stream.
+
+        Can optionally force ANSI SGR sequences (terminal color attributes,
+        etc...) on target stream.
+    '''
+    def produce_printer( address: str, flavor: _flavors.Flavor ) -> Printer:
+        from .standard import SimplePrinter
+        match __.sys.platform:
+            case 'win32':
+                winansi = _colorama.AnsiToWin32( target ) # pyright: ignore
+                target_ = ( # pragma: no cover
+                    winansi.stream if winansi.convert else target )
+            case _: target_ = target
+        return SimplePrinter(
+            target = target_, force_color = force_color ) # pyright: ignore
+
+    return produce_printer
 
 
 # def truncate_visual( text: str, columns_max: int ) -> str:
