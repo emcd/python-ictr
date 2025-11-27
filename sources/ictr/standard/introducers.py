@@ -35,14 +35,111 @@ class Introducer( __.Introducer ):
     ] = __.dcls.field( default_factory = _core.IntroducerConfiguration )
 
     def __call__(
-        self, control: __.TextualizerControl, record: __.Record
+        self,
+        control: __.TextualizerControl,
+        record: __.Record,
+        columns_max: __.Absential[ int ] = __.absent,
     ) -> str:
-        # TODO: Implement.
-        return ''
+        configuration = self.configuration
+        auxdata = _core.IntroducerState(
+            configuration = configuration,
+            control = control,
+            columns_max = columns_max )
+        if isinstance( record.flavor, int ):
+            return _render_trace_label( auxdata, record )
+        return _render_nominal_label( auxdata, record )
 
 
-class Introduction( __.immut.DataclassObject ):
-    ''' Structure for introduction. '''
+def _render_nominal_label(
+    auxdata: _core.IntroducerState, record: __.Record
+) -> str:
+    configuration = auxdata.configuration
+    styles = dict( configuration.styles )
+    flavor = record.flavor
+    if isinstance( flavor, int ): raise TypeError  # TODO: Better error.
+    name = __.flavor_aliases_standard.get( flavor, flavor )
+    spec = __.flavor_specifications_standard[ name ]
+    label = ''
+    if configuration.label_as & _core.LabelPresentations.Emoji:
+        if configuration.label_as & _core.LabelPresentations.Words:
+            label = f"{spec.emoji} {spec.label}"
+        else: label = f"{spec.emoji}"
+    elif configuration.label_as & _core.LabelPresentations.Words:
+        label = f"{spec.label}"
+    if configuration.colorize:
+        styles[ 'flavor' ] = _core.Style( fgcolor = spec.color )
+    return _render_common( auxdata, record, styles, label )
 
-    text: str
-    columns_count: int  # visible
+
+def _render_trace_label(
+    auxdata: _core.IntroducerState, record: __.Record
+) -> str:
+    # TODO? Option to render indentation guides.
+    configuration = auxdata.configuration
+    styles = dict( configuration.styles )
+    flavor = record.flavor
+    if not isinstance( flavor, int ): raise TypeError  # TODO: Better error.
+    level = flavor
+    label = ''
+    if configuration.label_as & _core.LabelPresentations.Emoji:
+        if configuration.label_as & _core.LabelPresentations.Words:
+            label = f"🔎 TRACE{level}"
+        else: label = '🔎'
+    elif configuration.label_as & _core.LabelPresentations.Words:
+        label = f"TRACE{level}"
+    if configuration.colorize and level < len( _trace_color_names ):
+        styles[ 'flavor' ] = (
+            _core.Style( fgcolor = _trace_color_names[ level ] ) )
+    indent = '  ' * level
+    return _render_common( auxdata, record, styles, label ) + indent
+
+
+def _render_common(
+    auxdata: _core.IntroducerState,
+    record: __.Record,
+    styles: __.cabc.Mapping[ str, _core.Style ],
+    label: str
+) -> str:
+    # TODO? Performance optimization: Only compute and interpolate PID, thread,
+    #       and timestamp, if capabilities set permits.
+    configuration = auxdata.configuration
+    auxiliaries = configuration.auxiliaries
+    thread = auxiliaries.thread_discoverer( )
+    interpolants: dict[ str, str ] = {
+        'flavor': label,
+        'address': record.address,
+        'timestamp': auxiliaries.time_formatter( configuration.ts_format ),
+        'process_id': str( auxiliaries.pid_discoverer( ) ),
+        'thread_id': str( thread.ident ),
+        'thread_name': thread.name,
+    }
+    if __.ENRICH and configuration.colorize:
+        _stylize_interpolants( auxdata, interpolants, styles )
+    return configuration.template.format( **interpolants )
+
+
+def _stylize_interpolants(
+    auxdata: _core.IntroducerState,
+    interpolants: dict[ str, str ],
+    styles: __.cabc.Mapping[ str, _core.Style ],
+) -> None:
+    style_default = styles.get( 'flavor' )
+    interpolants_: dict[ str, str ] = { }
+    for iname, ivalue in interpolants.items( ):
+        style = styles.get( iname, style_default )
+        if not style: continue # pragma: no branch
+        capture = __.io.StringIO( )
+        console = __.produce_rich_console(
+            auxdata.control, capture, auxdata.columns_max )
+        style_ = __.rich_style.Style( color = style.fgcolor )
+        console.print( ivalue, end = '', highlight = False, style = style_  )
+        interpolants_[ iname ] = capture.getvalue( )
+    interpolants.update( interpolants_ )
+
+
+_trace_color_names: tuple[ str, ... ] = (
+    'grey85', 'grey82', 'grey78', 'grey74', 'grey70',
+    'grey66', 'grey62', 'grey58', 'grey54', 'grey50' )
+
+_trace_prefix_styles: tuple[ _core.Style, ... ] = tuple(
+    _core.Style( fgcolor = name ) for name in _trace_color_names )

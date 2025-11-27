@@ -24,7 +24,6 @@
 from . import __
 from . import core as _core
 
-from .introducers import Introduction as _Introduction
 from .linearizers import linearize_omni as _linearize_omni
 
 
@@ -43,16 +42,20 @@ class Textualizer( __.Textualizer ):
                 Factory takes control object and record as arguments.
                 Returns introduction string.
             ''' ),
-    ] = 'ictr| '
+    ] = f"{__.package_name}| "
 
     def __call__(
         self, control: __.TextualizerControl, record: __.Record
     ) -> str:
+        # TODO: Determine if flavor requests backtrace.
         configuration = self.configuration
-        auxdata = _core.TextualizerState(
+        auxdata = _core.TextualizerState.from_configuration(
             configuration = configuration, control = control )
         content = record.content
-        introduction = _render_introduction( auxdata, self.introducer, record )
+        introducer = self.introducer
+        introduction = (
+            introducer if isinstance( introducer, str )
+            else introducer( control, record, auxdata.columns_max ) )
         if isinstance( content, __.MessageContent ):
             summary = _render_summary( auxdata, introduction, content.summary )
             details = tuple(
@@ -61,18 +64,6 @@ class Textualizer( __.Textualizer ):
             return configuration.details_separator.join( (
                 summary, *details ) )
         raise NotImplementedError  # TODO: Proper error.
-
-
-def _render_introduction(
-    auxdata: _core.TextualizerState,
-    introducer: __.IntroducerUnion,
-    record: __.Record,
-) -> _Introduction:
-    text = (
-        introducer if isinstance( introducer, str )
-        else introducer( auxdata.control, record ) )
-    columns_count = __.count_columns_visual( text )
-    return _Introduction( text = text, columns_count = columns_count )
 
 
 def _render_detail(
@@ -104,7 +95,7 @@ def _render_detail(
 
 def _render_summary(
     auxdata: _core.TextualizerState,
-    introduction: _Introduction,
+    introduction: str,
     summary: __.MessageSummary,
 ) -> str:
     match auxdata.columns_constraint:
@@ -116,12 +107,13 @@ def _render_summary(
 
 def _complect_render_summary(
     auxdata: _core.TextualizerState,
-    introduction: _Introduction,
+    introduction: str,
     summary: __.MessageSummary,
 ) -> str:
     # TODO: Consider continuation prefix.
     configuration = auxdata.configuration
     line_prefix = configuration.line_prefix
+    intro_ccount = __.count_columns_visual( introduction )
     prefix_ccount = __.count_columns_visual( line_prefix )
     remainder_ccount = (
         __.absent if __.is_absent( auxdata.columns_max )
@@ -137,27 +129,26 @@ def _complect_render_summary(
                 incision_point = (
                         configuration.summary_incision_ratio
                     *   auxdata.columns_max )
-            isolate_introduction = (
-                incision_point <= introduction.columns_count )
+            isolate_introduction = incision_point <= intro_ccount
             if not isolate_introduction:
-                candidate = f"{introduction.text} {content}"
+                candidate = f"{introduction} {content}"
                 candidate_ccount = (
-                        prefix_ccount + introduction.columns_count
+                        prefix_ccount + intro_ccount
                     +   __.count_columns_visual( content ) + 1 )
                 if candidate_ccount <= auxdata.columns_max:
                     lines_final.append( candidate )
                 else:
-                    lines_final.extend( ( introduction.text, *lines ) )
+                    lines_final.extend( ( introduction, *lines ) )
             else:
-                lines_final.extend( ( introduction.text, *lines ) )
+                lines_final.extend( ( introduction, *lines ) )
         case _:
-            lines_final.extend( ( introduction.text, *lines ) )
+            lines_final.extend( ( introduction, *lines ) )
     return '\n'.join( f"{line_prefix}{line}" for line in lines_final )
 
 
 def _exceed_render_summary(
     auxdata: _core.TextualizerState,
-    introduction: _Introduction,
+    introduction: str,
     summary: __.MessageSummary,
 ) -> str:
     # TODO: Consider continuation prefix.
@@ -169,7 +160,7 @@ def _exceed_render_summary(
         case 0: raise RuntimeError  # TODO: Appropriate error.
         case 1:
             content = lines[ 0 ]
-            lines_final.append( f"{introduction.text} {content}" )
+            lines_final.append( f"{introduction} {content}" )
         case _:
-            lines_final.extend( ( introduction.text, *lines ) )
+            lines_final.extend( ( introduction, *lines ) )
     return '\n'.join( f"{line_prefix}{line}" for line in lines_final )

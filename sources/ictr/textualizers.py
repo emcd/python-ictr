@@ -31,7 +31,10 @@ class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
 
     @__.abc.abstractmethod
     def __call__(
-        self, control: _printers.TextualizerControl, record: _records.Record
+        self,
+        control: _printers.TextualizerControl,
+        record: _records.Record,
+        columns_max: __.Absential[ int ] = __.absent,
     ) -> str:
         ''' Renders record as text label. '''
         raise NotImplementedError

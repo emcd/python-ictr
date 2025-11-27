@@ -21,7 +21,7 @@
 ''' Internal imports for textualizers and their attendants. '''
 
 
-# ruff: noqa: F401, F403
+# ruff: noqa: F401, F403, F405
 
 
 from ..__ import *
@@ -34,8 +34,29 @@ from ..textualizers import *
 
 ENRICH = False
 try:
+
     import rich.console as      rich_console
+    import rich.style as        rich_style
     import rich.text as         rich_text
     import rich.traceback as    rich_traceback
+
     ENRICH = True  # pyright: ignore[reportConstantRedefinition]
+
+    def produce_rich_console(
+        control: TextualizerControl,
+        capture: typx.IO[ str ],
+        columns_max: Absential[ int ] = absent,
+    ) -> rich_console.Console:
+        charset = control.charset or ''
+        colorize = control.colorize
+        columns_max_nullable = (
+            None if is_absent( columns_max ) else columns_max )
+        safe = charset.startswith( 'utf-' )
+        return rich_console.Console(
+            file = capture,
+            force_terminal = colorize,
+            no_color = not colorize,
+            safe_box = safe,
+            width = columns_max_nullable )
+
 except ImportError: pass

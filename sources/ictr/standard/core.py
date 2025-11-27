@@ -98,6 +98,9 @@ class LabelPresentations( __.enum.IntFlag ):
 class IntroducerConfiguration( __.immut.DataclassObject ):
     ''' Behaviors and format for text from standard introducer. '''
 
+    auxiliaries: __.typx.Annotated[
+        Auxiliaries, __.typx.Doc( ''' Auxiliaries for interpolation. ''' )
+    ] = __.dcls.field( default_factory = Auxiliaries )
     colorize: __.typx.Annotated[
         bool, __.typx.Doc( ''' Attempt to colorize? ''' )
     ] = True
@@ -127,7 +130,7 @@ class IntroducerConfiguration( __.immut.DataclassObject ):
 
                 The following interpolants are supported:
                 ``flavor``: Decorated flavor.
-                ``module_qname``: Qualified name of invoking module.
+                ``address``: Address of invoker.
                 ``timestamp``: Current timestamp, formatted as string.
                 ``process_id``: ID of current process according to OS kernel.
                 ``thread_id``: ID of current thread.
@@ -142,6 +145,18 @@ class IntroducerConfiguration( __.immut.DataclassObject ):
                 Used by :py:func:`time.strftime` or equivalent.
             ''' ),
     ] = '%Y-%m-%d %H:%M:%S.%f'
+
+
+class IntroducerState( __.immut.DataclassObject ):
+    ''' Data transfer object for introducer state. '''
+
+    configuration: IntroducerConfiguration
+    control: __.TextualizerControl
+    columns_max: __.typx.Annotated[
+        __.Absential[ int ],
+        __.ddoc.Doc(
+            ''' Available line length (maximum columns) of target. ''' ),
+    ] = __.absent
 
 
 class TextualizerConfiguration( __.immut.DataclassObject ):
@@ -187,6 +202,7 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
     line_prefix: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Prefix before every line. ''' )
     ] = ''
+    # TODO: stacktrace_exceptiongroups: Traceback each exception group member?
     summary_incision_ratio: __.typx.Annotated[
         float,
         __.ddoc.Doc(
@@ -199,26 +215,36 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
 
 
 class TextualizerState( __.immut.DataclassObject ):
-    # TODO: Replace properties with attributes since DTO is short-lived
-    #       and should provide consistent state throughout lifetime.
-    ''' Data transfer object for simple textualizer state. '''
+    ''' Data transfer object for textualizer state. '''
 
     configuration: TextualizerConfiguration
     control: __.TextualizerControl
+    columns_constraint: __.typx.Annotated[
+        ColumnsConstraints,
+        __.ddoc.Doc( ''' Effective columns constraint for lines. ''' ),
+    ] = ColumnsConstraints.Exceed
+    columns_max: __.typx.Annotated[
+        __.Absential[ int ],
+        __.ddoc.Doc(
+            ''' Available line length (maximum columns) of target. ''' ),
+    ]
 
-    @property
-    def columns_constraint( self ) -> ColumnsConstraints:
-        ''' Effective columns constraint for lines. '''
-        if __.is_absent( self.columns_max ): return ColumnsConstraints.Exceed
-        return self.configuration.columns_constraint
-
-    @property
-    def columns_max( self ) -> __.Absential[ int ]:
-        ''' Available line length (maximum columns) of target. '''
-        columns_max = (
-            self.control.columns_max or self.configuration.columns_max )
-        if columns_max is None: return __.absent
-        return columns_max
+    @classmethod
+    def from_configuration(
+        cls,
+        configuration: TextualizerConfiguration,
+        control: __.TextualizerControl,
+    ) -> __.typx.Self:
+        columns_constraint = configuration.columns_constraint
+        columns_max = control.columns_max or configuration.columns_max
+        if columns_max is None:
+            columns_constraint = ColumnsConstraints.Exceed
+            columns_max = __.absent
+        return cls(
+            configuration = configuration,
+            control = control,
+            columns_constraint = columns_constraint,
+            columns_max = columns_max )
 
 
 AUXILIARIES_DEFAULT = Auxiliaries( )

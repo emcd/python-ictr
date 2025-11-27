@@ -58,11 +58,3 @@ def _produce_textualizer_factory(
     textualizer: _texts.Textualizer
 ) -> __.TextualizerFactory:
     return lambda control, record: textualizer
-
-
-_trace_color_names: tuple[ str, ... ] = (
-    'grey85', 'grey82', 'grey78', 'grey74', 'grey70',
-    'grey66', 'grey62', 'grey58', 'grey54', 'grey50' )
-
-_trace_prefix_styles: tuple[ _core.Style, ... ] = tuple(
-    _core.Style( fgcolor = name ) for name in _trace_color_names )

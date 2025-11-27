@@ -51,7 +51,7 @@ def linearize_exception_rich(
 ) -> tuple[ str, ... ]:
     # TODO: Ensure that exception groups are handled properly.
     capture = __.io.StringIO( )
-    console = _produce_rich_console( auxdata, capture, columns_max )
+    console = __.produce_rich_console( auxdata.control, capture, columns_max )
     if not trace:
         console.print( exception )
         return tuple( capture.getvalue( ).split( '\n' ) )
@@ -79,7 +79,7 @@ def linearize_object_rich(
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
     capture = __.io.StringIO( )
-    console = _produce_rich_console( auxdata, capture, columns_max )
+    console = __.produce_rich_console( auxdata.control, capture, columns_max )
     console.print( entity )
     return tuple( capture.getvalue( ).split( '\n' ) )
 
@@ -172,7 +172,7 @@ def linearize_stacktrace_rich(
     trace = __.rich_traceback.Trace( stacks = [ stack ] )
     traceback = __.rich_traceback.Traceback( trace = trace )
     capture = __.io.StringIO( )
-    console = _produce_rich_console( auxdata, capture, columns_max )
+    console = __.produce_rich_console( auxdata.control, capture, columns_max )
     console.print( traceback )
     # TODO? Remove exception lines.
     return tuple( capture.getvalue( ).split( '\n' ) )
@@ -214,28 +214,9 @@ def linearize_text_rich(
         and configuration.incision_boundary
             is not _core.IncisionBoundaries.Nowhere )
     capture = __.io.StringIO( )
-    console = _produce_rich_console( auxdata, capture, columns_max )
+    console = __.produce_rich_console( auxdata.control, capture, columns_max )
     console.print(
         text_,
         overflow = 'ignore' if infinite_lines else 'fold',
         no_wrap = not incise )
     return tuple( capture.getvalue( ).split( '\n' ) )
-
-
-def _produce_rich_console(
-    auxdata: _core.TextualizerState,
-    capture: __.typx.IO[ str ],
-    columns_max: __.Absential[ int ] = __.absent,
-) -> __.rich_console.Console:
-    control = auxdata.control
-    charset = control.charset or ''
-    colorize = control.colorize
-    columns_max_nullable = (
-        None if __.is_absent( columns_max ) else columns_max )
-    safe = charset.startswith( 'utf-' )
-    return __.rich_console.Console(
-        file = capture,
-        force_terminal = colorize,
-        no_color = not colorize,
-        safe_box = safe,
-        width = columns_max_nullable )
