@@ -58,10 +58,10 @@ def produce_textualizer_factory_default(
     def produce_textualizer(
         control: _printers.TextualizerControl, record: _records.Record
     ) -> Textualizer:
-        from .standard import TextualizerDefault
+        from .standard import Textualizer
         # TODO? Utilize record fields.
         if __.is_absent( introducer ):
-            return TextualizerDefault( )
-        return TextualizerDefault( introducer = introducer )
+            return Textualizer( )
+        return Textualizer( introducer = introducer )
 
     return produce_textualizer

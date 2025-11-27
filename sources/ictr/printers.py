@@ -142,14 +142,14 @@ def produce_printer_factory_default(
         etc...) on target stream.
     '''
     def produce_printer( address: str, flavor: _flavors.Flavor ) -> Printer:
-        from .standard import SimplePrinter
+        from .standard import Printer
         match __.sys.platform:
             case 'win32':
                 winansi = _colorama.AnsiToWin32( target ) # pyright: ignore
                 target_ = ( # pragma: no cover
                     winansi.stream if winansi.convert else target )
             case _: target_ = target
-        return SimplePrinter(
+        return Printer(
             target = target_, force_color = force_color ) # pyright: ignore
 
     return produce_printer

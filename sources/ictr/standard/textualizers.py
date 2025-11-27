@@ -34,8 +34,8 @@ class Introduction( __.immut.DataclassObject ):
     columns_count: int  # visible
 
 
-class TextualizerDefault( __.Textualizer ):
-    ''' Simple textualizer. '''
+class Textualizer( __.Textualizer ):
+    ''' Standard textualizer. '''
 
     configuration: __.typx.Annotated[
         _core.TextualizerConfiguration,

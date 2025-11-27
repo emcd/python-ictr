@@ -644,7 +644,7 @@ def _produce_ic_configuration(
 def _resolve_printer(
     dispatcher: Dispatcher, address: str, flavor: _flavors.Flavor
 ) -> _printers.Printer:
-    from .standard import SimplePrinter
+    from .standard import Printer
     if isinstance( dispatcher.printer_factory, __.io.TextIOBase ):
-        return SimplePrinter( target = dispatcher.printer_factory )
+        return Printer( target = dispatcher.printer_factory )
     return dispatcher.printer_factory( address, flavor )

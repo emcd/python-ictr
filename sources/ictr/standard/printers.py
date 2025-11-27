@@ -30,7 +30,7 @@ _validate_arguments = (
         errorclass = __.ArgumentClassInvalidity ) )
 
 
-class SimplePrinter( __.Printer ):
+class Printer( __.Printer ):
     ''' Simple printer that writes to a text stream. '''
 
     target: __.io.TextIOBase
