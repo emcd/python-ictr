@@ -61,10 +61,10 @@ TextualizerFactory: __.typx.TypeAlias = (
 
 
 def produce_textualizer_factory_default(
-    include_exception: bool = False,
     introducer: __.Absential[ IntroducerUnion ] = __.absent,
     line_prefix_initial: str = '',
     line_prefix_subsequent: str = '  ',
+    trace_exceptions: bool = False,
 ) -> TextualizerFactory:
     ''' Produces default textualizer factory. '''
     def produce_textualizer(
@@ -72,9 +72,16 @@ def produce_textualizer_factory_default(
         addresss: str,
         flavor: _flavors.Flavor,
     ) -> Textualizer:
-        from .standard import Textualizer, TextualizerConfiguration
+        from .standard import (
+            ExceptionsConfiguration,
+            Textualizer,
+            TextualizerConfiguration,
+        )
+        ecfg = ExceptionsConfiguration(
+            enable_discovery = trace_exceptions,
+            enable_stacktraces = trace_exceptions )
         tcfg = TextualizerConfiguration(
-            include_exception = include_exception,
+            exceptionscfg = ecfg,
             line_prefix_initial = line_prefix_initial,
             line_prefix_subsequent = line_prefix_subsequent )
         if __.is_absent( introducer ):

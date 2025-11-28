@@ -48,18 +48,20 @@ class Textualizer( __.Textualizer ):
         self, control: __.TextualizerControl, record: __.Record
     ) -> str:
         configuration = self.configuration
+        ecfg = configuration.exceptionscfg
         auxdata = _core.TextualizerState.from_configuration(
             configuration = configuration, control = control )
         content = record.content
-        exception = (
-            configuration.exc_info_discoverer( )[ 1 ]
-            if configuration.include_exception else None )
         introducer = self.introducer
         introduction = (
             introducer if isinstance( introducer, str )
             else introducer( control, record, auxdata.columns_max ) )
         if isinstance( content, __.MessageContent ):
-            summary = _render_summary( auxdata, introduction, content.summary )
+            summary_ = content.summary
+            exception = (
+                None if isinstance( summary_, BaseException )
+                else ecfg.discover( ) )
+            summary = _render_summary( auxdata, introduction, summary_ )
             details = tuple(
                 _render_detail( auxdata, detail )
                 for detail in filter( None, ( exception, *content.details ) ) )

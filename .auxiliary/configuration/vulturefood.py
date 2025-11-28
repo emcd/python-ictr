@@ -24,7 +24,6 @@ __call__
 Whitespace
 Anywhere
 detail_prefix
-exception_format
 linearize_stacktrace_rich
 
 color
@@ -49,3 +48,4 @@ produce_flavors
 auxiliaries
 recursive_stacktraces
 addresss
+enable_stacktraces

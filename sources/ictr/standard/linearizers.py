@@ -29,13 +29,11 @@ def linearize_exception_plain(
     auxdata: _core.TextualizerState,
     exception: BaseException,
     columns_max: __.Absential[ int ] = __.absent,
-    trace: bool = False,
 ) -> tuple[ str, ... ]:
+    ecfg = auxdata.configuration.exceptionscfg
     tbe = __.tb.TracebackException.from_exception( exception )
-    eclass = type( exception )
-    fqname = f"{eclass.__module__}.{eclass.__qualname__}"
-    lines = [ f"{fqname}: {exception}" ]
-    if trace:
+    lines = [ *ecfg.interpolate( exception ) ]
+    if ecfg.enable_stacktraces:
         lines.extend(
             linearize_stacktrace_plain( auxdata, tbe.stack, columns_max ) )
     # TODO: Process '__cause__' and '__context__'.
@@ -47,12 +45,12 @@ def linearize_exception_rich(
     auxdata: _core.TextualizerState,
     exception: BaseException,
     columns_max: __.Absential[ int ] = __.absent,
-    trace: bool = False,
 ) -> tuple[ str, ... ]:
     # TODO: Ensure that exception groups are handled properly.
+    ecfg = auxdata.configuration.exceptionscfg
     capture = __.io.StringIO( )
     console = __.produce_rich_console( auxdata.control, capture, columns_max )
-    if not trace:
+    if not ecfg.enable_stacktraces:
         console.print( exception )
         return tuple( capture.getvalue( ).split( '\n' ) )
     traceback = __.rich_traceback.Traceback.from_exception(

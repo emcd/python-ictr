@@ -82,6 +82,44 @@ class LabelPresentations( __.enum.IntFlag ):
     Emoji =     __.enum.auto( )
 
 
+class ExceptionsConfiguration( __.immut.DataclassObject ):
+    ''' Configuration pertaining to exceptions. '''
+
+    discoverer: __.typx.Annotated[
+        __.typx.Callable[ [ ], __.ExceptionInfo ],
+        __.ddoc.Doc( ''' Returns information on current exception. ''' ),
+    ] = __.sys.exc_info
+    enable_discovery: __.typx.Annotated[
+        bool, __.ddoc.Doc( ''' Discover active exception? ''' )
+    ] = False
+    enable_stacktraces: __.typx.Annotated[
+        bool, __.ddoc.Doc( ''' Render tracebacks? ''' )
+    ] = False
+    recursive_stacktraces: __.typx.Annotated[
+        bool, __.ddoc.Doc(
+            ''' Render traceback for each exception group member? ''' ),
+    ] = False
+    template: __.typx.Annotated[
+        str, __.ddoc.Doc( ''' Template for exception message. ''' )
+    ] = '[{name}] {message}'
+
+    def discover( self ) -> __.typx.Optional[ BaseException ]:
+        ''' Discovers active exception. '''
+        return self.discoverer( )[ 1 ] if self.enable_discovery else None
+
+    def interpolate( self, exception: BaseException ) -> tuple[ str, ... ]:
+        ''' Interpolates exception attributes into message template. '''
+        eclass = type( exception )
+        name = eclass.__name__
+        qname = eclass.__qualname__
+        mname = eclass.__module__
+        interpolants = dict(
+            name = name, qname = qname, mname = mname,
+            message = str( exception ) )
+        interpolants[ 'fqname' ] = f"{mname}.{qname}"
+        return tuple( self.template.format( **interpolants ).split( '\n' ) )
+
+
 class IntroducerConfiguration( __.immut.DataclassObject ):
     ''' Behaviors and format for text from standard introducer. '''
 
@@ -196,21 +234,10 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
     details_separator: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Separator between details. ''' )
     ] = '\n\n'
-    exception_format: __.typx.Annotated[
-        str, __.ddoc.Doc( ''' Template for exception message. ''' )
-    ] = '[{name}] {message}'
-    exc_info_discoverer: __.typx.Annotated[
-        __.typx.Callable[ [ ], __.ExceptionInfo ],
-        __.ddoc.Doc( ''' Returns information on current exception. ''' ),
-    ] = __.sys.exc_info
-    include_exception: __.typx.Annotated[
-        bool,
-        __.ddoc.Doc(
-            ''' Include active exception as additional detail?
-
-                Active exception is returned by ``exc_info_discoverer``.
-            ''' ),
-    ] = False
+    exceptionscfg: __.typx.Annotated[
+        ExceptionsConfiguration,
+        __.ddoc.Doc( ''' Configuration pertaining to exceptions. ''' ),
+    ] = __.dcls.field( default_factory = ExceptionsConfiguration )
     incision_boundary: __.typx.Annotated[
         IncisionBoundaries,
         __.ddoc.Doc(
@@ -228,10 +255,6 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
                 visual width of the initial line prefix.
             ''' ),
     ] = None
-    recursive_stacktraces: __.typx.Annotated[
-        bool, __.ddoc.Doc(
-            ''' Render traceback for each exception group member? ''' ),
-    ] = False
     summary_incision_ratio: __.typx.Annotated[
         float,
         __.ddoc.Doc(

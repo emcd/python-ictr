@@ -61,7 +61,7 @@ def produce_flavors_default( ) -> FlavorsRegistry:
     flavors: FlavorsRegistryLiberal = { }
     for name, spec in _flavors.flavor_specifications_standard.items( ):
         tfactory = _texts.produce_textualizer_factory_default(
-            include_exception = spec.stack, introducer = f"{spec.label}| " )
+            introducer = f"{spec.label}| ", trace_exceptions = spec.stack )
         flavors[ name ] = FlavorConfiguration(
             textualizer_factory = tfactory )
     for alias, name in _flavors.flavor_aliases_standard.items( ):
