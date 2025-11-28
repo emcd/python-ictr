@@ -51,6 +51,7 @@ _validate_arguments = (
 class AddressesConfigurationsRegistry(
     __.accret.Dictionary[ str, _cfg.AddressConfiguration ]
 ):
+    # TODO: Use 'accret.ValidatorDictionary'.
     ''' Accretive dictionary specifically for address registrations. '''
 
     def __init__(
@@ -77,18 +78,24 @@ ActiveFlavorsLiberal: __.typx.TypeAlias = __.typx.Union[
     __.cabc.Set[ _flavors.Flavor ],
 ]
 ActiveFlavorsRegistry: __.typx.TypeAlias = (
-    __.immut.Dictionary[ str | None, ActiveFlavors ] )
+    __.immut.Dictionary[ __.typx.Optional[ str ], ActiveFlavors ] )
 ActiveFlavorsRegistryLiberal: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str | None, ActiveFlavorsLiberal ] )
+    __.cabc.Mapping[ __.typx.Optional[ str ], ActiveFlavorsLiberal ] )
 AddressesConfigurationsRegistryLiberal: __.typx.TypeAlias = (
     __.cabc.Mapping[ str, _cfg.AddressConfiguration ] )
 ReportersRegistry: __.typx.TypeAlias = (
     __.accret.Dictionary[
         tuple[ str, _flavors.Flavor ], _reporters.Reporter ] )
 TraceLevelsRegistry: __.typx.TypeAlias = (
-    __.immut.Dictionary[ str | None, int ] )
+    __.immut.Dictionary[ __.typx.Optional[ str ], int ] )
 TraceLevelsRegistryLiberal: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str | None, int ] )
+    __.cabc.Mapping[ __.typx.Optional[ str ], int ] )
+
+
+def _provide_active_flavors_default( ) -> ActiveFlavorsRegistry:
+    ''' Provides default set of globally active flavors. '''
+    return __.immut.Dictionary( {
+        None: frozenset( _flavors.flavor_specifications_standard.keys( ) ) } )
 
 
 builtins_alias_default: __.typx.Annotated[
@@ -116,16 +123,7 @@ class Dispatcher( __.immut.DataclassObject ):
                 Key ``None`` applies globally. Address-specific entries
                 override globals for that address.
             ''' ),
-    ] = __.dcls.field( default_factory = ActiveFlavorsRegistry )
-    generalcfg: __.typx.Annotated[
-        _cfg.DispatcherConfiguration,
-        __.typx.Doc(
-            ''' General configuration.
-
-                Top of configuration inheritance hierarchy.
-                Default is suitable for application use.
-            ''' ),
-    ] = __.dcls.field( default_factory = _cfg.DispatcherConfiguration )
+    ] = __.dcls.field( default_factory = _provide_active_flavors_default )
     addresscfgs: __.typx.Annotated[
         AddressesConfigurationsRegistry,
         __.typx.Doc(
@@ -136,6 +134,15 @@ class Dispatcher( __.immut.DataclassObject ):
                 configruration.
             ''' ),
     ] = __.dcls.field( default_factory = lambda: addresscfgs )
+    generalcfg: __.typx.Annotated[
+        _cfg.DispatcherConfiguration,
+        __.typx.Doc(
+            ''' General configuration.
+
+                Top of configuration inheritance hierarchy.
+                Default is suitable for application use.
+            ''' ),
+    ] = __.dcls.field( default_factory = _cfg.DispatcherConfiguration )
     printer_factory: __.typx.Annotated[
         _printers.PrinterFactoryUnion,
         __.typx.Doc(
@@ -216,8 +223,8 @@ class Dispatcher( __.immut.DataclassObject ):
         with _installer_mutex:
             dispatcher_o = getattr( builtins, alias, None )
             if isinstance( dispatcher_o, Dispatcher ):
-                self( 'note', module_name = __name__ )(
-                    'Installed dispatcher is being replaced.' )
+                self( 'note', address = __name__ )(
+                    "Installed dispatcher is being replaced." )
                 setattr( builtins, alias, self )
             else:
                 __.install_builtin_safely(
@@ -554,7 +561,7 @@ def _calculate_effective_flavors(
     result_ = flavors.get( None ) or frozenset( )
     if isinstance( result_, Omniflavor ): return result_
     result = result_
-    for address_ in _iterate_module_name_ancestry( address ):
+    for address_ in _iterate_address_ancestry( address ):
         if address_ in flavors:
             result_ = flavors.get( address_ ) or frozenset( )
             if isinstance( result_, Omniflavor ): return result_
@@ -566,7 +573,7 @@ def _calculate_effective_trace_level(
     levels: TraceLevelsRegistry, address: str
 ) -> int:
     result = levels.get( None, -1 )
-    for address_ in _iterate_module_name_ancestry( address ):
+    for address_ in _iterate_address_ancestry( address ):
         if address_ in levels:
             result = levels[ address_ ]
     return result
@@ -595,7 +602,7 @@ def _discover_invoker_module_name( ) -> str:
     return name
 
 
-def _iterate_module_name_ancestry( name: str ) -> __.cabc.Iterator[ str ]:
+def _iterate_address_ancestry( name: str ) -> __.cabc.Iterator[ str ]:
     parts = name.split( '.' )
     for i in range( len( parts ) ):
         yield '.'.join( parts[ : i + 1 ] )
@@ -627,7 +634,7 @@ def _produce_ic_configuration(
         if not field.name.startswith( '_' ) }
     if flavor in dconfig.flavors:
         fconfigs.append( dconfig.flavors[ flavor ] )
-    for address_ in _iterate_module_name_ancestry( address ):
+    for address_ in _iterate_address_ancestry( address ):
         if address_ not in dispatcher.addresscfgs: continue
         mconfig = dispatcher.addresscfgs[ address_ ]
         configd = _merge_ic_configuration( configd, mconfig )

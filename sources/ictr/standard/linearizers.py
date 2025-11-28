@@ -89,7 +89,8 @@ def linearize_omni(
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
-    if __.ENRICH: return linearize_omni_rich( auxdata, entity, columns_max )
+    if auxdata.colorize:
+        return linearize_omni_rich( auxdata, entity, columns_max )
     return linearize_omni_plain( auxdata, entity, columns_max )
 
 

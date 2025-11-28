@@ -139,16 +139,34 @@ class IntroducerState( __.immut.DataclassObject ):
 
     configuration: IntroducerConfiguration
     control: __.TextualizerControl
+    colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
     columns_max: __.typx.Annotated[
         __.Absential[ int ],
         __.ddoc.Doc(
             ''' Available line length (maximum columns) of target. ''' ),
     ] = __.absent
 
+    @classmethod
+    def from_configuration(
+        cls,
+        configuration: IntroducerConfiguration,
+        control: __.TextualizerControl,
+        columns_max: __.Absential[ int ] = __.absent,
+    ) -> __.typx.Self:
+        colorize = __.ENRICH and control.colorize and configuration.colorize
+        return cls(
+            configuration = configuration,
+            control = control,
+            colorize = colorize,
+            columns_max = columns_max )
+
 
 class TextualizerConfiguration( __.immut.DataclassObject ):
     ''' Behaviors and format for text from standard textualizer. '''
 
+    colorize: __.typx.Annotated[
+        bool, __.typx.Doc( ''' Attempt to colorize? ''' )
+    ] = True
     columns_constraint: __.typx.Annotated[
         ColumnsConstraints,
         __.ddoc.Doc(
@@ -230,6 +248,7 @@ class TextualizerState( __.immut.DataclassObject ):
 
     configuration: TextualizerConfiguration
     control: __.TextualizerControl
+    colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
     columns_constraint: __.typx.Annotated[
         ColumnsConstraints,
         __.ddoc.Doc( ''' Effective columns constraint for lines. ''' ),
@@ -238,7 +257,7 @@ class TextualizerState( __.immut.DataclassObject ):
         __.Absential[ int ],
         __.ddoc.Doc(
             ''' Available line length (maximum columns) of target. ''' ),
-    ]
+    ] = __.absent
 
     @classmethod
     def from_configuration(
@@ -246,6 +265,7 @@ class TextualizerState( __.immut.DataclassObject ):
         configuration: TextualizerConfiguration,
         control: __.TextualizerControl,
     ) -> __.typx.Self:
+        colorize = __.ENRICH and control.colorize and configuration.colorize
         columns_constraint = configuration.columns_constraint
         columns_max = control.columns_max or configuration.columns_max
         if columns_max is None:
@@ -254,6 +274,7 @@ class TextualizerState( __.immut.DataclassObject ):
         return cls(
             configuration = configuration,
             control = control,
+            colorize = colorize,
             columns_constraint = columns_constraint,
             columns_max = columns_max )
 

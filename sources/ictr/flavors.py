@@ -46,6 +46,7 @@ flavor_aliases_standard: __.immut.Dictionary[
     'e': 'error', 'a': 'abort',
     'ex': 'errorx', 'ax': 'abortx',
     'f': 'future', 's': 'success',
+    'v': 'advice',
 } )
 
 flavor_specifications_standard: __.immut.Dictionary[
@@ -71,4 +72,6 @@ flavor_specifications_standard: __.immut.Dictionary[
         color = 'magenta', emoji = '🔮', label = 'FUTURE' ),
     success = StandardFlavorSpecification(
         color = 'green', emoji = '✅', label = 'SUCCESS' ),
+    advice = StandardFlavorSpecification(
+        color = 'cyan', emoji = '💡', label = 'ADVICE' ),
 )

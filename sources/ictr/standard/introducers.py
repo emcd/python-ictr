@@ -41,7 +41,7 @@ class Introducer( __.Introducer ):
         columns_max: __.Absential[ int ] = __.absent,
     ) -> str:
         configuration = self.configuration
-        auxdata = _core.IntroducerState(
+        auxdata = _core.IntroducerState.from_configuration(
             configuration = configuration,
             control = control,
             columns_max = columns_max )
@@ -67,7 +67,7 @@ def _render_nominal_label(
         else: label = f"{spec.emoji}"
     elif configuration.label_as & _core.LabelPresentations.Words:
         label = f"{spec.label}"
-    if configuration.colorize:
+    if auxdata.colorize:
         styles[ 'flavor' ] = _core.Style( fgcolor = spec.color )
     return _render_common( auxdata, record, styles, label )
 
@@ -89,7 +89,7 @@ def _render_trace_label(
         else: label = '🔎'
     elif configuration.label_as & _core.LabelPresentations.Words:
         label = f"TRACE{level}"
-    if configuration.colorize and level < len( _trace_color_names ):
+    if auxdata.colorize and level < len( _trace_color_names ):
         styles[ 'flavor' ] = (
             _core.Style( fgcolor = _trace_color_names[ level ] ) )
     return _render_common( auxdata, record, styles, label )
@@ -114,7 +114,7 @@ def _render_common(
         'thread_id': str( thread.ident ),
         'thread_name': thread.name,
     }
-    if __.ENRICH and configuration.colorize:
+    if auxdata.colorize:
         _stylize_interpolants( auxdata, interpolants, styles )
     return configuration.template.format( **interpolants )
 
