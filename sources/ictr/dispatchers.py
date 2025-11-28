@@ -32,7 +32,7 @@ from . import textualizers as _texts
 
 _installer_mutex: __.threads.Lock = __.threads.Lock( )
 _registrar_mutex: __.threads.Lock = __.threads.Lock( )
-_self_modulecfg: _cfg.ModuleConfiguration = _cfg.ModuleConfiguration(
+_self_addresscfg: _cfg.AddressConfiguration = _cfg.AddressConfiguration(
     flavors = __.immut.Dictionary(
         note = _cfg.FlavorConfiguration(
             textualizer_factory = (
@@ -48,19 +48,19 @@ _validate_arguments = (
         errorclass = _exceptions.ArgumentClassInvalidity ) )
 
 
-class ModulesConfigurationsRegistry(
-    __.accret.Dictionary[ str, _cfg.ModuleConfiguration ]
+class AddressesConfigurationsRegistry(
+    __.accret.Dictionary[ str, _cfg.AddressConfiguration ]
 ):
-    ''' Accretive dictionary specifically for module registrations. '''
+    ''' Accretive dictionary specifically for address registrations. '''
 
     def __init__(
         self,
         *iterables: __.DictionaryPositionalArgument[
-            str, _cfg.ModuleConfiguration ],
+            str, _cfg.AddressConfiguration ],
         **entries: __.DictionaryNominativeArgument[
-            _cfg.ModuleConfiguration ],
+            _cfg.AddressConfiguration ],
     ):
-        super( ).__init__( { __.package_name: _self_modulecfg } )
+        super( ).__init__( { __.package_name: _self_addresscfg } )
         self.update( *iterables, **entries )
 
 
@@ -80,8 +80,8 @@ ActiveFlavorsRegistry: __.typx.TypeAlias = (
     __.immut.Dictionary[ str | None, ActiveFlavors ] )
 ActiveFlavorsRegistryLiberal: __.typx.TypeAlias = (
     __.cabc.Mapping[ str | None, ActiveFlavorsLiberal ] )
-ModulesConfigurationsRegistryLiberal: __.typx.TypeAlias = (
-    __.cabc.Mapping[ str, _cfg.ModuleConfiguration ] )
+AddressesConfigurationsRegistryLiberal: __.typx.TypeAlias = (
+    __.cabc.Mapping[ str, _cfg.AddressConfiguration ] )
 ReportersRegistry: __.typx.TypeAlias = (
     __.accret.Dictionary[
         tuple[ str, _flavors.Flavor ], _reporters.Reporter ] )
@@ -96,10 +96,10 @@ builtins_alias_default: __.typx.Annotated[
     __.typx.Doc(
         ''' Default alias for global dispatcher in builtins module. ''' ),
 ] = 'ictr'
-modulecfgs: __.typx.Annotated[
-    ModulesConfigurationsRegistry,
-    __.typx.Doc( ''' Global registry of module configurations. ''' ),
-] = ModulesConfigurationsRegistry( )
+addresscfgs: __.typx.Annotated[
+    AddressesConfigurationsRegistry,
+    __.typx.Doc( ''' Global registry of address configurations. ''' ),
+] = AddressesConfigurationsRegistry( )
 omniflavor: __.typx.Annotated[
     Omniflavor, __.typx.Doc( ''' Matches any flavor. ''' )
 ] = Omniflavor.Instance
@@ -111,10 +111,10 @@ class Dispatcher( __.immut.DataclassObject ):
     active_flavors: __.typx.Annotated[
         ActiveFlavorsRegistry,
         __.typx.Doc(
-            ''' Mapping of module names to active flavor sets.
+            ''' Mapping of addresses to active flavor sets.
 
-                Key ``None`` applies globally. Module-specific entries
-                override globals for that module.
+                Key ``None`` applies globally. Address-specific entries
+                override globals for that address.
             ''' ),
     ] = __.dcls.field( default_factory = ActiveFlavorsRegistry )
     generalcfg: __.typx.Annotated[
@@ -126,31 +126,31 @@ class Dispatcher( __.immut.DataclassObject ):
                 Default is suitable for application use.
             ''' ),
     ] = __.dcls.field( default_factory = _cfg.DispatcherConfiguration )
-    modulecfgs: __.typx.Annotated[
-        ModulesConfigurationsRegistry,
+    addresscfgs: __.typx.Annotated[
+        AddressesConfigurationsRegistry,
         __.typx.Doc(
-            ''' Registry of per-module configurations.
+            ''' Registry of per-address configurations.
 
-                Modules inherit configuration from their parent packages.
+                Addresses inherit configuration from their parent packages.
                 Top-level packages inherit from general instance
                 configruration.
             ''' ),
-    ] = __.dcls.field( default_factory = lambda: modulecfgs )
+    ] = __.dcls.field( default_factory = lambda: addresscfgs )
     printer_factory: __.typx.Annotated[
         _printers.PrinterFactoryUnion,
         __.typx.Doc(
             ''' Factory which produces callables to output text somewhere.
 
                 May also be writable text stream.
-                Factories take two arguments, module name and flavor, and
+                Factories take two arguments, address and flavor, and
                 return a callable which takes one argument, the string
-                produced by a formatter.
+                produced by a textualizer.
             ''' ),
     ] = _printers.produce_printer_factory_default( __.sys.stderr )
     reporters: __.typx.Annotated[
         ReportersRegistry,
         __.typx.Doc(
-            ''' Cache of reporter instances by module and flavor. ''' ),
+            ''' Cache of reporter instances by address and flavor. ''' ),
     ] = __.dcls.field( default_factory = ReportersRegistry )
     reporters_mutex: __.typx.Annotated[
         __.threads.Lock,
@@ -159,10 +159,10 @@ class Dispatcher( __.immut.DataclassObject ):
     trace_levels: __.typx.Annotated[
         TraceLevelsRegistry,
         __.typx.Doc(
-            ''' Mapping of module names to maximum trace depths.
+            ''' Mapping of addresses to maximum trace depths.
 
-                Key ``None`` applies globally. Module-specific entries
-                override globals for that module.
+                Key ``None`` applies globally. Address-specific entries
+                override globals for that address.
             ''' ),
     ] = __.dcls.field(
         default_factory = lambda: __.immut.Dictionary( { None: -1 } ) )
@@ -193,12 +193,12 @@ class Dispatcher( __.immut.DataclassObject ):
             active = (
                 isinstance( active_flavors, Omniflavor )
                 or flavor in active_flavors )
-        formatter = configuration[ 'formatter_factory' ](
+        textualizer = configuration[ 'textualizer_factory' ](
             control, address, flavor )
         printer = _resolve_printer( self, address, flavor )
         reporter = _reporters.Reporter(
             active = active, address = address, flavor = flavor,
-            textualizer = formatter, printer = printer )
+            textualizer = textualizer, printer = printer )
         with self.reporters_mutex:
             self.reporters[ cache_index ] = reporter
         return reporter
@@ -207,10 +207,10 @@ class Dispatcher( __.immut.DataclassObject ):
     def install( self, alias: str = builtins_alias_default ) -> __.typx.Self:
         ''' Installs dispatcher into builtins with provided alias.
 
-            Replaces an existing dispatcher. Preserves global module
+            Replaces an existing dispatcher. Preserves global address
             configurations.
 
-            Library developers should call :py:func:`register_module` instead.
+            Library developers should call :py:func:`register_address` instead.
         '''
         import builtins
         with _installer_mutex:
@@ -225,14 +225,14 @@ class Dispatcher( __.immut.DataclassObject ):
         return self
 
     @_validate_arguments
-    def register_module(
+    def register_address(
         self,
         name: __.Absential[ str ] = __.absent,
-        configuration: __.Absential[ _cfg.ModuleConfiguration ] = __.absent,
+        configuration: __.Absential[ _cfg.AddressConfiguration ] = __.absent,
     ) -> __.typx.Self:
-        ''' Registers configuration for module.
+        ''' Registers configuration for address.
 
-            If no module or package name is given, then the current module is
+            If no address is given, then the invoking module name is
             inferred.
 
             If no configuration is provided, then a default is generated.
@@ -240,9 +240,9 @@ class Dispatcher( __.immut.DataclassObject ):
         if __.is_absent( name ):
             name = _discover_invoker_module_name( )
         if __.is_absent( configuration ):
-            configuration = _cfg.ModuleConfiguration( )
+            configuration = _cfg.AddressConfiguration( )
         with _registrar_mutex:
-            self.modulecfgs[ name ] = configuration
+            self.addresscfgs[ name ] = configuration
         return self
 
 
@@ -252,9 +252,9 @@ ActiveFlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' Flavors to activate.
 
             Can be collection, which applies globally across all registered
-            modules. Or, can be mapping of module names to sets.
+            addresses. Or, can be mapping of addresses to sets.
 
-            Module-specific entries merge with global entries.
+            Address-specific entries merge with global entries.
         ''' ),
 ]
 EvnActiveFlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
@@ -291,13 +291,13 @@ FlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ _cfg.FlavorsRegistryLiberal ],
     __.typx.Doc( ''' Registry of flavor identifiers to configurations. ''' ),
 ]
-FormatterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
+TextualizerFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ _texts.TextualizerFactory ],
     __.typx.Doc(
-        ''' Factory which produces formatter callable.
+        ''' Factory which produces textualizer callable.
 
-            Takes formatter control, module name, and flavor as arguments.
-            Returns formatter to convert an argument to a string.
+            Takes textualizer control, address, and flavor as arguments.
+            Returns textualizer to convert record content to a string.
         ''' ),
 ]
 GeneralcfgArgument: __.typx.TypeAlias = __.typx.Annotated[
@@ -323,24 +323,24 @@ IntroducerArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.typx.Doc(
         ''' String or factory which produces message introduction.
 
-            Factory takes formatter control, module name, and flavor as
+            Factory takes textualizer control, address, and flavor as
             arguments. Returns introduction string.
         ''' ),
 ]
-ModuleNameArgument: __.typx.TypeAlias = __.typx.Annotated[
+AddressArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ str ],
     __.typx.Doc(
-        ''' Name of the module to register.
+        ''' Address to register.
 
-            If absent, infers the current module name.
+            If absent, infers the invoking module name as the address.
         ''' ),
 ]
-ModulecfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ ModulesConfigurationsRegistryLiberal ],
+AddresscfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
+    __.Absential[ AddressesConfigurationsRegistryLiberal ],
     __.typx.Doc(
-        ''' Module configurations for the dispatcher.
+        ''' Address configurations for the dispatcher.
 
-            If absent, defaults to global modules registry.
+            If absent, defaults to global addresses registry.
         ''' ),
 ]
 PrinterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
@@ -349,9 +349,9 @@ PrinterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' Factory which produces callables to output text somewhere.
 
             May also be writable text stream.
-            Factories take two arguments, module name and flavor, and
+            Factories take two arguments, address and flavor, and
             return a callable which takes one argument, the string
-            produced by a formatter.
+            produced by a textualizer.
 
             If absent, uses a default.
         ''' ),
@@ -362,9 +362,9 @@ TraceLevelsArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' Maximum trace depths.
 
             Can be an integer, which applies globally across all registered
-            modules. Or, can be a mapping of module names to integers.
+            addresses. Or, can be a mapping of addresses to integers.
 
-            Module-specific entries override global entries.
+            Address-specific entries override global entries.
         ''' ),
 ]
 
@@ -374,7 +374,7 @@ def active_flavors_from_environment(
 ) -> ActiveFlavorsRegistry:
     ''' Extracts active flavors from named environment variable. '''
     active_flavors: ActiveFlavorsRegistryLiberal = { }
-    name = 'ICTRUCK_ACTIVE_FLAVORS' if __.is_absent( evname ) else evname
+    name = 'ICTR_ACTIVE_FLAVORS' if __.is_absent( evname ) else evname
     value = __.os.getenv( name, '' )
     for part in value.split( '+' ):
         if not part: continue
@@ -396,7 +396,7 @@ def trace_levels_from_environment(
 ) -> TraceLevelsRegistry:
     ''' Extracts trace levels from named environment variable. '''
     trace_levels: TraceLevelsRegistryLiberal = { None: -1 }
-    name = 'ICTRUCK_TRACE_LEVELS' if __.is_absent( evname ) else evname
+    name = 'ICTR_TRACE_LEVELS' if __.is_absent( evname ) else evname
     value = __.os.getenv( name, '' )
     for part in value.split( '+' ):
         if not part: continue
@@ -423,10 +423,10 @@ def install( # noqa: PLR0913
 ) -> Dispatcher:
     ''' Produces dispatcher and installs it into builtins with alias.
 
-        Replaces an existing dispatcher, preserving global module
+        Replaces an existing dispatcher, preserving global address
         configurations.
 
-        Library developers should call :py:func:`register_module` instead.
+        Library developers should call :py:func:`register_address` instead.
     '''
     dispatcher = produce_dispatcher(
         active_flavors = active_flavors,
@@ -442,7 +442,7 @@ def install( # noqa: PLR0913
 def produce_dispatcher( # noqa: PLR0913
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
-    modulecfgs: ModulecfgsArgument = __.absent,
+    modulecfgs: AddresscfgsArgument = __.absent,
     printer_factory: PrinterFactoryArgument = __.absent,
     trace_levels: TraceLevelsArgument = __.absent,
     evname_active_flavors: EvnActiveFlavorsArgument = __.absent,
@@ -455,7 +455,7 @@ def produce_dispatcher( # noqa: PLR0913
     if not __.is_absent( generalcfg ):
         initargs[ 'generalcfg' ] = generalcfg
     if not __.is_absent( modulecfgs ):
-        initargs[ 'modulecfgs' ] = ModulesConfigurationsRegistry(
+        initargs[ 'modulecfgs' ] = AddressesConfigurationsRegistry(
             {   address: configuration for address, configuration
                 in modulecfgs.items( ) } )
     if not __.is_absent( printer_factory ):
@@ -468,14 +468,14 @@ def produce_dispatcher( # noqa: PLR0913
 
 
 @_validate_arguments
-def register_module(
-    name: ModuleNameArgument = __.absent,
+def register_address(
+    name: AddressArgument = __.absent,
     flavors: FlavorsArgument = __.absent,
-    formatter_factory: FormatterFactoryArgument = __.absent,
+    textualizer_factory: TextualizerFactoryArgument = __.absent,
     include_context: IncludeContextArgument = __.absent,
-    prefix_emitter: IntroducerArgument = __.absent,
-) -> _cfg.ModuleConfiguration:
-    ''' Registers module configuration on the builtin dispatcher.
+    introducer: IntroducerArgument = __.absent,
+) -> _cfg.AddressConfiguration:
+    ''' Registers address configuration on the builtin dispatcher.
 
         If no dispatcher exists in builtins, installs one which produces null
         printers.
@@ -495,14 +495,14 @@ def register_module(
     nomargs: dict[ str, __.typx.Any ] = { }
     if not __.is_absent( flavors ):
         nomargs[ 'flavors' ] = __.immut.Dictionary( flavors )
-    if not __.is_absent( formatter_factory ):
-        nomargs[ 'formatter_factory' ] = formatter_factory
+    if not __.is_absent( textualizer_factory ):
+        nomargs[ 'textualizer_factory' ] = textualizer_factory
     if not __.is_absent( include_context ):
         nomargs[ 'include_context' ] = include_context
-    if not __.is_absent( prefix_emitter ):
-        nomargs[ 'prefix_emitter' ] = prefix_emitter
-    configuration = _cfg.ModuleConfiguration( **nomargs )
-    return dispatcher.register_module(
+    if not __.is_absent( introducer ):
+        nomargs[ 'introducer' ] = introducer
+    configuration = _cfg.AddressConfiguration( **nomargs )
+    return dispatcher.register_address(
         name = name, configuration = configuration )
 
 
@@ -609,7 +609,7 @@ def _merge_ic_configuration(
     result[ 'flavors' ] = (
             dict( base.get( 'flavors', dict( ) ) )
         |   dict( update.get( 'flavors', dict( ) ) ) )
-    for ename in ( 'formatter_factory', 'include_context', 'prefix_emitter' ):
+    for ename in ( 'textualizer_factory', 'include_context', 'introducer' ):
         uvalue = update.get( ename )
         if uvalue is not None: result[ ename ] = uvalue
         elif ename in base: result[ ename ] = base[ ename ]
@@ -628,13 +628,13 @@ def _produce_ic_configuration(
     if flavor in dconfig.flavors:
         fconfigs.append( dconfig.flavors[ flavor ] )
     for address_ in _iterate_module_name_ancestry( address ):
-        if address_ not in dispatcher.modulecfgs: continue
-        mconfig = dispatcher.modulecfgs[ address_ ]
+        if address_ not in dispatcher.addresscfgs: continue
+        mconfig = dispatcher.addresscfgs[ address_ ]
         configd = _merge_ic_configuration( configd, mconfig )
         if flavor in mconfig.flavors:
             fconfigs.append( mconfig.flavors[ flavor ] )
     if not fconfigs: raise _exceptions.FlavorInavailability( flavor )
-    # Apply collected flavor configs after general and module configs.
+    # Apply collected flavor configs after general and address configs.
     # (Applied in top-down order for correct overrides.)
     for fconfig in fconfigs:
         configd = _merge_ic_configuration( configd, fconfig )

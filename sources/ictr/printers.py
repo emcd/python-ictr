@@ -52,7 +52,7 @@ ColumnsMaxCalculator: __.typx.TypeAlias = __.typx.Annotated[
 
 
 class TextualizerControl( __.immut.DataclassObject ):
-    ''' Contextual data for formatter and introduction factories. '''
+    ''' Contextual data for textualizer and introducer factories. '''
 
     charset: __.typx.Annotated[
         __.typx.Optional[ str ],

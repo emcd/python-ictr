@@ -78,8 +78,8 @@ def produce_flavors_default( ) -> FlavorsRegistry:
     return __.immut.Dictionary( flavors )
 
 
-class ModuleConfiguration( __.immut.DataclassObject ):
-    ''' Per-module or per-package configuration. '''
+class AddressConfiguration( __.immut.DataclassObject ):
+    ''' Per-address configuration. '''
 
     flavors: __.typx.Annotated[
         FlavorsRegistry,
