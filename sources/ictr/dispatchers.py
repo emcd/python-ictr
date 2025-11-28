@@ -382,7 +382,9 @@ def active_flavors_from_environment(
     ''' Extracts active flavors from named environment variable. '''
     active_flavors: ActiveFlavorsRegistryLiberal = { }
     name = 'ICTR_ACTIVE_FLAVORS' if __.is_absent( evname ) else evname
-    value = __.os.getenv( name, '' )
+    value = __.os.getenv( name )
+    if value is None:
+        return _provide_active_flavors_default( )
     for part in value.split( '+' ):
         if not part: continue
         if ':' in part:

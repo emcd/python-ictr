@@ -68,4 +68,4 @@ def produce_flavors(
 def _produce_textualizer_factory(
     textualizer: _texts.Textualizer
 ) -> __.TextualizerFactory:
-    return lambda control, record: textualizer
+    return lambda control, address, flavor: textualizer

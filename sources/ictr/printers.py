@@ -119,8 +119,9 @@ def remove_ansi_c1_sequences( text: str ) -> str:
 def produce_columns_max_calculator(
     target: __.io.TextIOBase
 ) -> ColumnsMaxCalculator:
-    fileno = getattr( target, 'fileno', None )
-    if fileno is None: return None
+    fileno_revealer = getattr( target, 'fileno', None )
+    if fileno_revealer is None: return None
+    fileno = fileno_revealer( )
     if not __.os.isatty( fileno ): return None
 
     def calculate( ) -> __.typx.Optional[ int ]:

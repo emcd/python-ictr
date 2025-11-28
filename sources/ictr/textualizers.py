@@ -22,6 +22,7 @@
 
 
 from . import __
+from . import flavors as _flavors
 from . import printers as _printers
 from . import records as _records
 
@@ -56,7 +57,7 @@ class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
 
 TextualizerFactory: __.typx.TypeAlias = (
     __.typx.Callable[
-        [ _printers.TextualizerControl, _records.Record ], Textualizer ] )
+        [ _printers.TextualizerControl, str, _flavors.Flavor ], Textualizer ] )
 
 
 def produce_textualizer_factory_default(
@@ -67,7 +68,9 @@ def produce_textualizer_factory_default(
 ) -> TextualizerFactory:
     ''' Produces default textualizer factory. '''
     def produce_textualizer(
-        control: _printers.TextualizerControl, record: _records.Record
+        control: _printers.TextualizerControl,
+        addresss: str,
+        flavor: _flavors.Flavor,
     ) -> Textualizer:
         from .standard import Textualizer, TextualizerConfiguration
         tcfg = TextualizerConfiguration(
