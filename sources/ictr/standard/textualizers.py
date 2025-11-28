@@ -47,11 +47,13 @@ class Textualizer( __.Textualizer ):
     def __call__(
         self, control: __.TextualizerControl, record: __.Record
     ) -> str:
-        # TODO: Determine if flavor requests backtrace.
         configuration = self.configuration
         auxdata = _core.TextualizerState.from_configuration(
             configuration = configuration, control = control )
         content = record.content
+        exception = (
+            configuration.exc_info_discoverer( )[ 1 ]
+            if configuration.include_exception else None )
         introducer = self.introducer
         introduction = (
             introducer if isinstance( introducer, str )
@@ -60,24 +62,22 @@ class Textualizer( __.Textualizer ):
             summary = _render_summary( auxdata, introduction, content.summary )
             details = tuple(
                 _render_detail( auxdata, detail )
-                for detail in content.details )
+                for detail in filter( None, ( exception, *content.details ) ) )
             return configuration.details_separator.join( (
                 summary, *details ) )
-        raise NotImplementedError  # TODO: Proper error.
+        raise NotImplementedError  # TODO: Appropriate error.
 
 
-def _render_detail(
-    auxdata: _core.TextualizerState, detail: __.MessageDetail
-) -> str:
+def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
     configuration = auxdata.configuration
     detail_prefix_i = configuration.detail_prefix_initial
     detail_prefix_i_ccount = __.count_columns_visual( detail_prefix_i )
     detail_prefix_s = configuration.detail_prefix_subsequent
     if detail_prefix_s is None:
         detail_prefix_s = ' ' * detail_prefix_i_ccount
-    line_prefix = configuration.line_prefix
+    line_prefix_s = configuration.line_prefix_subsequent
     prefix_ccount = (
-        __.count_columns_visual( line_prefix ) + detail_prefix_i_ccount )
+        __.count_columns_visual( line_prefix_s ) + detail_prefix_i_ccount )
     match auxdata.columns_constraint:
         case _core.ColumnsConstraints.Complect:
             remainder_ccount = (
@@ -86,17 +86,17 @@ def _render_detail(
         case _core.ColumnsConstraints.Exceed:
             remainder_ccount = __.absent
     lines = iter( _linearize_omni( auxdata, detail, remainder_ccount ) )
+    lines_final: list[ str ] = [ ]
     line_i = next( lines )
-    lines_final = [ f"{line_prefix}{detail_prefix_i}{line_i}" ]
-    lines_final.extend(
-        f"{line_prefix}{detail_prefix_s}{line}" for line in lines )
+    _update_lines_collection(
+        configuration, lines_final,
+        f"{detail_prefix_i}{line_i}",
+        tuple( f"{detail_prefix_s}{line}" for line in lines ) )
     return '\n'.join( lines_final )
 
 
 def _render_summary(
-    auxdata: _core.TextualizerState,
-    introduction: str,
-    summary: __.MessageSummary,
+    auxdata: _core.TextualizerState, introduction: str, summary: object
 ) -> str:
     match auxdata.columns_constraint:
         case _core.ColumnsConstraints.Complect:
@@ -106,15 +106,13 @@ def _render_summary(
 
 
 def _complect_render_summary(
-    auxdata: _core.TextualizerState,
-    introduction: str,
-    summary: __.MessageSummary,
+    auxdata: _core.TextualizerState, introduction: str, summary: object
 ) -> str:
-    # TODO: Consider continuation prefix.
     configuration = auxdata.configuration
-    line_prefix = configuration.line_prefix
+    line_prefix_i = configuration.line_prefix_initial
+    line_prefix_s = configuration.line_prefix_subsequent
     intro_ccount = __.count_columns_visual( introduction )
-    prefix_ccount = __.count_columns_visual( line_prefix )
+    prefix_ccount = __.count_columns_visual( line_prefix_s )
     remainder_ccount = (
         __.absent if __.is_absent( auxdata.columns_max )
         else auxdata.columns_max - prefix_ccount )
@@ -136,31 +134,48 @@ def _complect_render_summary(
                         prefix_ccount + intro_ccount
                     +   __.count_columns_visual( content ) + 1 )
                 if candidate_ccount <= auxdata.columns_max:
-                    lines_final.append( candidate )
+                    lines_final.append( f"{line_prefix_i}{candidate}" )
                 else:
-                    lines_final.extend( ( introduction, *lines ) )
+                    _update_lines_collection(
+                        configuration, lines_final, introduction, lines )
             else:
-                lines_final.extend( ( introduction, *lines ) )
+                _update_lines_collection(
+                    configuration, lines_final, introduction, lines )
         case _:
-            lines_final.extend( ( introduction, *lines ) )
-    return '\n'.join( f"{line_prefix}{line}" for line in lines_final )
+            _update_lines_collection(
+                configuration, lines_final, introduction, lines )
+    return '\n'.join( lines_final )
 
 
 def _exceed_render_summary(
-    auxdata: _core.TextualizerState,
-    introduction: str,
-    summary: __.MessageSummary,
+    auxdata: _core.TextualizerState, introduction: str, summary: object
 ) -> str:
-    # TODO: Consider continuation prefix.
     configuration = auxdata.configuration
-    line_prefix = configuration.line_prefix
+    line_prefix_i = configuration.line_prefix_initial
     lines_final: list[ str ] = [ ]
     lines = _linearize_omni( auxdata, summary )
     match len( lines ):
         case 0: raise RuntimeError  # TODO: Appropriate error.
         case 1:
             content = lines[ 0 ]
-            lines_final.append( f"{introduction} {content}" )
+            lines_final.append( f"{line_prefix_i}{introduction} {content}" )
         case _:
-            lines_final.extend( ( introduction, *lines ) )
-    return '\n'.join( f"{line_prefix}{line}" for line in lines_final )
+            _update_lines_collection(
+                configuration, lines_final, introduction, lines )
+    return '\n'.join( lines_final )
+
+
+def _update_lines_collection(
+    configuration: _core.TextualizerConfiguration,
+    collector: list[ str ],
+    line_initial: str,
+    lines_subsequent: __.typx.Optional[ tuple[ str, ... ] ] = None,
+) -> None:
+    line_prefix_i = configuration.line_prefix_initial
+    line_prefix_s = configuration.line_prefix_subsequent
+    if line_prefix_s is None:
+        line_prefix_s = ' ' * __.count_columns_visual( line_prefix_i )
+    collector.append( f"{line_prefix_i}{line_initial}" )
+    if lines_subsequent:
+        collector.extend(
+            f"{line_prefix_s}{line}" for line in lines_subsequent )

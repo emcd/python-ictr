@@ -90,8 +90,7 @@ def _render_trace_label(
     if configuration.colorize and level < len( _trace_color_names ):
         styles[ 'flavor' ] = (
             _core.Style( fgcolor = _trace_color_names[ level ] ) )
-    indent = '  ' * level
-    return _render_common( auxdata, record, styles, label ) + indent
+    return _render_common( auxdata, record, styles, label )
 
 
 def _render_common(

@@ -60,19 +60,22 @@ TextualizerFactory: __.typx.TypeAlias = (
 
 
 def produce_textualizer_factory_default(
-    introducer: __.Absential[ IntroducerUnion ] = __.absent
+    include_exception: bool = False,
+    introducer: __.Absential[ IntroducerUnion ] = __.absent,
+    line_prefix_initial: str = '',
+    line_prefix_subsequent: str = '  ',
 ) -> TextualizerFactory:
-    ''' Produces default textualizer factory.
-
-        Can optionally be associated with a particular introducer.
-    '''
+    ''' Produces default textualizer factory. '''
     def produce_textualizer(
         control: _printers.TextualizerControl, record: _records.Record
     ) -> Textualizer:
-        from .standard import Textualizer
-        # TODO? Utilize record fields.
+        from .standard import Textualizer, TextualizerConfiguration
+        tcfg = TextualizerConfiguration(
+            include_exception = include_exception,
+            line_prefix_initial = line_prefix_initial,
+            line_prefix_subsequent = line_prefix_subsequent )
         if __.is_absent( introducer ):
-            return Textualizer( )
-        return Textualizer( introducer = introducer )
+            return Textualizer( configuration = tcfg )
+        return Textualizer( configuration = tcfg, introducer = introducer )
 
     return produce_textualizer

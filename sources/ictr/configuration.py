@@ -61,14 +61,18 @@ def produce_flavors_default( ) -> FlavorsRegistry:
     flavors: FlavorsRegistryLiberal = { }
     for name, spec in _flavors.flavor_specifications_standard.items( ):
         tfactory = _texts.produce_textualizer_factory_default(
-            introducer = f"{spec.label}| " )
+            include_exception = spec.stack, introducer = f"{spec.label}| " )
         flavors[ name ] = FlavorConfiguration(
             textualizer_factory = tfactory )
     for alias, name in _flavors.flavor_aliases_standard.items( ):
         flavors[ alias ] = flavors[ name ]
     for level in range( 10 ):
+        indent_i = '  ' * level
+        indent_s = '  ' * ( level + 1 )
         tfactory = _texts.produce_textualizer_factory_default(
-            introducer = f"TRACE{level}| " )
+            introducer = f"TRACE{level}| ",
+            line_prefix_initial = indent_i,
+            line_prefix_subsequent = indent_s )
         flavors[ level ] = FlavorConfiguration(
             textualizer_factory = tfactory )
     return __.immut.Dictionary( flavors )

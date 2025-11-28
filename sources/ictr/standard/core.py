@@ -25,17 +25,12 @@ from . import __
 
 
 class Auxiliaries( __.immut.DataclassObject ):
-    # TODO? Merge into IntroducerConfiguration.
     ''' Auxiliary functions used by textualizers and interpolation.
 
         Typically used by unit tests to inject mock dependencies,
         but can also be used to deeply customize output.
     '''
 
-    exc_info_discoverer: __.typx.Annotated[
-        __.typx.Callable[ [ ], __.ExceptionInfo ],
-        __.ddoc.Doc( ''' Returns information on current exception. ''' ),
-    ] = __.sys.exc_info
     pid_discoverer: __.typx.Annotated[
         __.typx.Callable[ [ ], int ],
         __.ddoc.Doc( ''' Returns ID of current process. ''' ),
@@ -77,14 +72,6 @@ class Style( __.immut.DataclassObject ):
 
 InterpolantsStylesRegistry: __.typx.TypeAlias = (
     __.accret.Dictionary[ str, Style ] )
-
-
-class IntroductionDecors( __.enum.IntFlag ):
-    ''' Decoration styles for introductions. '''
-
-    Plain =     0
-    Color =     __.enum.auto( )
-    Emoji =     __.enum.auto( )
 
 
 class LabelPresentations( __.enum.IntFlag ):
@@ -194,15 +181,39 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
     exception_format: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Template for exception message. ''' )
     ] = '[{name}] {message}'
+    exc_info_discoverer: __.typx.Annotated[
+        __.typx.Callable[ [ ], __.ExceptionInfo ],
+        __.ddoc.Doc( ''' Returns information on current exception. ''' ),
+    ] = __.sys.exc_info
+    include_exception: __.typx.Annotated[
+        bool,
+        __.ddoc.Doc(
+            ''' Include active exception as additional detail?
+
+                Active exception is returned by ``exc_info_discoverer``.
+            ''' ),
+    ] = False
     incision_boundary: __.typx.Annotated[
         IncisionBoundaries,
         __.ddoc.Doc(
             ''' Where to constrain text which exceeds maximum columns. ''' ),
     ] = IncisionBoundaries.Wordsplits
-    line_prefix: __.typx.Annotated[
-        str, __.ddoc.Doc( ''' Prefix before every line. ''' )
+    line_prefix_initial: __.typx.Annotated[
+        str, __.ddoc.Doc( ''' Prefix before first line. ''' )
     ] = ''
-    # TODO: stacktrace_exceptiongroups: Traceback each exception group member?
+    line_prefix_subsequent: __.typx.Annotated[
+        __.typx.Optional[ str ],
+        __.ddoc.Doc(
+            ''' Prefix before each line after the first.
+
+                If ``None``, then automatic padding is calculated based on the
+                visual width of the initial line prefix.
+            ''' ),
+    ] = None
+    recursive_stacktraces: __.typx.Annotated[
+        bool, __.ddoc.Doc(
+            ''' Render traceback for each exception group member? ''' ),
+    ] = False
     summary_incision_ratio: __.typx.Annotated[
         float,
         __.ddoc.Doc(
@@ -247,6 +258,5 @@ class TextualizerState( __.immut.DataclassObject ):
             columns_max = columns_max )
 
 
-AUXILIARIES_DEFAULT = Auxiliaries( )
 INTRODUCER_CONFIGURATION_DEFAULT = IntroducerConfiguration( )
 TEXTUALIZER_CONFIGURATION_DEFAULT = TextualizerConfiguration( )

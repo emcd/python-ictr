@@ -47,3 +47,4 @@ template
 ts_format
 produce_flavors
 auxiliaries
+recursive_stacktraces

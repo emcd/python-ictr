@@ -28,8 +28,6 @@ from . import textualizers as _texts
 
 
 def produce_flavors(
-    auxiliaries: _core.Auxiliaries = (
-        _core.AUXILIARIES_DEFAULT ),
     introducercfg: _core.IntroducerConfiguration = (
         _core.INTRODUCER_CONFIGURATION_DEFAULT ),
     textualizercfg: _core.TextualizerConfiguration = (
@@ -43,12 +41,25 @@ def produce_flavors(
     introducer = _intros.Introducer( configuration = introducercfg )
     textualizer = _texts.Textualizer(
         configuration = textualizercfg, introducer = introducer )
-    for name in __.flavor_specifications_standard:
+    for name, spec in __.flavor_specifications_standard.items( ):
+        tcfg = textualizercfg
+        if spec.stack:
+            tcfg = __.dcls.replace( textualizercfg, include_exception = True )
+        textualizer = _texts.Textualizer(
+            configuration = tcfg, introducer = introducer )
         flavors[ name ] = __.FlavorConfiguration(
             textualizer_factory = _produce_textualizer_factory( textualizer ) )
     for alias, name in __.flavor_aliases_standard.items( ):
         flavors[ alias ] = flavors[ name ]
     for level in range( 10 ):
+        indent_i = '  ' * level
+        indent_s = '  ' * ( level + 1 )
+        tcfg = __.dcls.replace(
+            textualizercfg,
+            line_prefix_initial = indent_i,
+            line_prefix_subsequent = indent_s )
+        textualizer = _texts.Textualizer(
+            configuration = tcfg, introducer = introducer )
         flavors[ level ] = __.FlavorConfiguration(
             textualizer_factory = _produce_textualizer_factory( textualizer ) )
     return __.immut.Dictionary( flavors )
