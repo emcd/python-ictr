@@ -51,6 +51,14 @@ class AttributeNondisplacement( Omnierror, AttributeError ):
             f"Cannot displace attribute {name!r} on: {object_}" )
 
 
+class ContentMisclassification( Omnierror, TypeError ):
+    ''' Record content type is invalid or unsupported. '''
+
+    def __init__( self, class_: type ):
+        super( ).__init__(
+            f"Unsupported record content type: {class_.__name__}" )
+
+
 class FlavorInavailability( Omnierror, ValueError ):
     ''' Requested flavor is not available. '''
 
@@ -58,8 +66,24 @@ class FlavorInavailability( Omnierror, ValueError ):
         super( ).__init__( f"Flavor {flavor!r} is not available." )
 
 
+class FlavorMisclassification( Omnierror, TypeError ):
+    ''' Flavor type is invalid for the requested operation. '''
+
+    def __init__( self, flavor: int | str, expectation: str ):
+        super( ).__init__(
+            f"Expected {expectation} flavor, got {type( flavor ).__name__}: "
+            f"{flavor!r}" )
+
+
 class ModuleInferenceFailure( Omnierror, RuntimeError ):
     ''' Failure to infer invoking module from call stack. '''
 
     def __init__( self ):
         super( ).__init__( "Could not infer invoking module from call stack." )
+
+
+class SummaryLinearizationFailure( Omnierror, RuntimeError ):
+    ''' Failure to linearize summary. '''
+
+    def __init__( self ):
+        super( ).__init__( "Summary linearization produced no lines." )

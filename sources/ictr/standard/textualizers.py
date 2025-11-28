@@ -65,7 +65,7 @@ class Textualizer( __.Textualizer ):
                 for detail in filter( None, ( exception, *content.details ) ) )
             return configuration.details_separator.join( (
                 summary, *details ) )
-        raise NotImplementedError  # TODO: Appropriate error.
+        raise __.ContentMisclassification( type( content ) )
 
 
 def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
@@ -119,7 +119,7 @@ def _complect_render_summary(
     lines_final: list[ str ] = [ ]
     lines = _linearize_omni( auxdata, summary, remainder_ccount )
     match len( lines ):
-        case 0: raise RuntimeError  # TODO: Appropriate error.
+        case 0: raise __.SummaryLinearizationFailure( )
         case 1:
             content = lines[ 0 ]
             incision_point = 0
@@ -155,7 +155,7 @@ def _exceed_render_summary(
     lines_final: list[ str ] = [ ]
     lines = _linearize_omni( auxdata, summary )
     match len( lines ):
-        case 0: raise RuntimeError  # TODO: Appropriate error.
+        case 0: raise __.SummaryLinearizationFailure( )
         case 1:
             content = lines[ 0 ]
             lines_final.append( f"{line_prefix_i}{introduction} {content}" )

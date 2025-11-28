@@ -56,7 +56,8 @@ def _render_nominal_label(
     configuration = auxdata.configuration
     styles = dict( configuration.styles )
     flavor = record.flavor
-    if isinstance( flavor, int ): raise TypeError  # TODO: Better error.
+    if isinstance( flavor, int ):
+        raise __.FlavorMisclassification( flavor, expectation = 'string' )
     name = __.flavor_aliases_standard.get( flavor, flavor )
     spec = __.flavor_specifications_standard[ name ]
     label = ''
@@ -78,7 +79,8 @@ def _render_trace_label(
     configuration = auxdata.configuration
     styles = dict( configuration.styles )
     flavor = record.flavor
-    if not isinstance( flavor, int ): raise TypeError  # TODO: Better error.
+    if not isinstance( flavor, int ):
+        raise __.FlavorMisclassification( flavor, expectation = 'int' )
     level = flavor
     label = ''
     if configuration.label_as & _core.LabelPresentations.Emoji:
