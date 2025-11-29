@@ -25,6 +25,4 @@ Test Plans
    :maxdepth: 2
 
    summary
-
-
-.. todo:: Add test plan documents to toctree.
+   comprehensive-coverage

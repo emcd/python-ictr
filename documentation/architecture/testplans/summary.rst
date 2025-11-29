@@ -60,7 +60,49 @@ The test planning process systematically addresses:
 Test Module Numbering Scheme
 ===============================================================================
 
-.. todo:: Define project-specific test module numbering conventions.
+Test modules follow architectural layering with systematic numbering:
+
+**000-099: Package Infrastructure**
+  - test_000_package.py - Package sanity tests
+  - test_010_base.py - Common imports validation
+
+**100-199: Core Data Structures and Protocols**
+  - test_100_records.py - Record and MessageContent
+  - test_110_flavors.py - FlavorSpecification and standard definitions
+  - test_120_configuration.py - Configuration dataclasses and hierarchy
+  - test_130_exceptions.py - Package exception hierarchy
+
+**200-299: Protocols and Interfaces**
+  - test_200_textualizers.py - Textualizer protocol and factories
+  - test_210_printers.py - Printer protocol and factories
+
+**300-399: Core Layer Implementations**
+  - test_300_reporters.py - Reporter message handling
+  - test_310_inspection.py - Stack frame inspection for module addressing
+
+**400-499: Dispatcher Layer**
+  - test_400_dispatchers.py - Dispatcher routing, registration, builtins
+
+**500-699: Standard Recipe Implementations**
+  - test_500_standard_core.py - TextualizerConfiguration and state
+  - test_510_standard_flavors.py - Standard flavor definitions
+  - test_520_standard_introducers.py - Introduction formatting logic
+  - test_530_standard_linearizers.py - Content-to-lines conversion
+  - test_540_standard_textualizers.py - Complete textualization flow
+  - test_550_standard_printers.py - Stderr and custom output
+
+**700-799: Integration Tests**
+  - test_700_integration_basic.py - End-to-end message flow
+  - test_710_integration_exceptions.py - Exception capture and rendering
+  - test_720_integration_hierarchy.py - Configuration inheritance
+  - test_730_integration_concurrency.py - Thread-safe operation
+
+**Numbering Rationale**:
+
+- Lower numbers represent lower-level, foundational components
+- Higher numbers represent higher-level, integrated functionality
+- 100-number blocks provide room for growth within each category
+- Integration tests at 700+ validate cross-layer functionality
 
 Test Function Numbering
 ===============================================================================
