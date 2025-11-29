@@ -17,7 +17,7 @@
    +--------------------------------------------------------------------------+
 
 *******************************************************************************
-                                      ictr                                     
+                                      ictr
 *******************************************************************************
 
 .. image:: https://img.shields.io/pypi/v/ictr
@@ -45,8 +45,44 @@
    :target: https://pypi.org/project/ictr/
 
 
-.. todo:: Provide project description and key features.
+🖋️ **Ictr** is a system for logging and debug printing in Python applications.
+It provides a clean, type-safe API for emitting diagnostic messages with
+minimal boilerplate, featuring standard message flavors, hierarchical trace
+levels for debugging depth, automatic exception tracebacks, and optional rich
+rendering with colors and styling.
 
+Designed as an alternative to traditional print debugging and verbose logging
+setup, ``ictr`` can install a global dispatcher into the Python builtins,
+similar to the well-known `icecream <https://github.com/gruns/icecream>`_
+package, for effortless access throughout your application — no import
+statements needed in every module. Perfect for both quick debugging sessions
+and production logging with per-module configuration.
+
+Key Features ⭐
+===============================================================================
+
+🎨 **Standard Message Flavors**: Pre-configured ``note``, ``monition``,
+``error``, ``abort``, ``future``, ``success``, and ``advice`` flavors with
+semantic labels and optional emoji/color styling.
+
+🔢 **Hierarchical Trace Levels**: Ten trace levels (0-9) with automatic
+indentation for visualizing call depth and execution flow.
+
+💥 **Automatic Exception Tracebacks**: ``errorx`` and ``abortx`` flavors
+capture and format active exceptions with full stack traces.
+
+🌳 **Module Hierarchy**: Global and per-module configs with inheritance for
+precise control over active flavors, trace levels, output formatting, etc....
+
+🚀 **Zero-Import Access**: Global dispatcher available in builtins after
+initial setup — no import statements needed in every module.
+
+🖨️ **Printer Factory**: Dynamically associate output functions with reporters
+based on module name, flavor, etc.... Swap in customized ``print``,
+``logging``, or other sinks as desired.
+
+📚 **Library-Friendly**: Non-intrusive registration for libraries without
+stepping on application debugger/logging configuration.
 
 Installation 📦
 ===============================================================================
@@ -68,7 +104,102 @@ Or, install via ``pip``:
     pip install ictr
 
 
-.. todo:: Provide usage examples and additional content.
+.. todo:: Provide usage examples once documentation/examples/ is populated.
+
+
+Motivation 🚚
+===============================================================================
+
+Why ``ictr``?
+
+There is nothing wrong with the ``icecream`` or ``logging`` packages. However,
+there are times that the author of ``ictr`` (and its predecessor,
+``icecream-truck``) has wanted, for various reasons, more than these packages
+inherently offer:
+
+* **Coexistence**: Application and libraries can coexist without configuration
+  clashes.
+
+  - Library developers are `strongly advised not to create custom levels
+    <https://docs.python.org/3/howto/logging.html#custom-levels>`_ in
+    ``logging``.
+
+  - Library developers are `advised on how to avoid polluting stderr
+    <https://docs.python.org/3/howto/logging.html#configuring-logging-for-a-library>`_
+    in ``logging``, when an application has not supplied a configuration.
+
+  - Loggers `propagate upwards
+    <https://docs.python.org/3/library/logging.html#logging.Logger.propagate>`_
+    by default in ``logging``. This means that libraries must explicitly
+    opt-out of propagation if their authors want to be good citizens and not
+    contribute to noise pollution / signal obfuscation.
+
+* **Granularity**: Control of debug output by depth threshold and subsystem.
+
+  - Only one default debugging level (``DEBUG``) with ``logging``. Libraries
+    cannot safely extend this. (See point about coexistence).
+
+  - No concept of debugging level with ``ic`` builtin. Need to orchestrate
+    multiple ``icecream.IceCreamDebugger`` instances to support this. (In
+    fact, this is what ``icecream-truck`` does.)
+
+  - While logger hierarchies in ``logging`` do support the notion of software
+    subsystems, hierarchies are not always the most convenient or abbreviated
+    way of representing subsystems which span parts or entireties of modules.
+
+* **Signal**: Prevention of undesirable library chatter.
+
+  - The ``logging`` root logger will log all messages, at its current log
+    level or higher, which propagate up to it. Many Python libraries have
+    opt-out rather than opt-in logging, so you see all of their ``DEBUG`` and
+    ``INFO`` spam unless you surgically manipulate their loggers or squelch
+    the overall log level.
+
+  - Use of the ``ic`` builtin is only recommended for temporary debugging. It
+    cannot be left in production code without spamming. While the ``enabled``
+    flag on the ``ic`` builtin can be set to false, it is easy to forget and
+    also applies to every place where ``ic`` is used in the code. (See point
+    about granularity.)
+
+* **Extensibility**: More natural integration with packages like ``rich`` via
+  robust recipes.
+
+  - While it is not difficult to change the ``argToStringFunction`` on ``ic``
+    to be ``rich.pretty.pretty_repr``, there is some repetitive code involved
+    in each project which wants to do this. And, from a safety perspective,
+    there should be a fallback if ``rich`` fails to import.
+
+  - Similarly, one can add a ``rich.logging.RichHandler`` instance to a
+    logger instance with minimal effort. However, depending on the the target
+    output stream, one may also need to build a ``rich.console.Console`` first
+    and pass that to the handler. This handler will also compete with whatever
+    handler has been set on the root logger. So, some care must be taken to
+    prevent propagation. Again, this is repetitive code across projects and
+    there are import safety fallbacks to consider.
+
+
+About the Name 📝
+===============================================================================
+
+The name ``ictr`` has multiple origins and interpretations:
+
+* 🍦 **Shortened from icecream-truck**: The package from which ``ictr`` is
+  derived and redesigned. The abbreviation maintains the connection to its
+  predecessor while establishing its own identity.
+
+* 🎯 **Short and memorable**: Four letters that are easy to type and remember.
+  The Python package distribution name and import name are the same, reducing
+  cognitive overhead.
+
+* 📊 **Backronym interpretations**: While ``ictr`` works perfectly well as
+  just a name, several backronyms capture different aspects of its purpose:
+
+  - **Inspection-Capable Trace Reporting** (emphasizes diagnostic capabilities)
+  - **Intelligent Configurable Trace Reporter** (emphasizes smart behavior)
+  - **I See Textual Reports** (playful take on the phonetic sound)
+
+Pronunciation? You can spell it out. But, if that is too many syllables, then
+maybe "eyes-tra" but probably not "ick-ter", because it is not that revulsive.
 
 
 Contribution 🤝
@@ -128,27 +259,27 @@ Other Projects by This Author 🌟
 ===============================================================================
 
 
-* `python-absence <https://github.com/emcd/python-absence>`_ (`absence <https://pypi.org/project/absence/>`_ on PyPI) 
+* `python-absence <https://github.com/emcd/python-absence>`_ (`absence <https://pypi.org/project/absence/>`_ on PyPI)
 
   🕳️ A Python library package which provides a **sentinel for absent values** - a falsey, immutable singleton that represents the absence of a value in contexts where ``None`` or ``False`` may be valid values.
-* `python-accretive <https://github.com/emcd/python-accretive>`_ (`accretive <https://pypi.org/project/accretive/>`_ on PyPI) 
+* `python-accretive <https://github.com/emcd/python-accretive>`_ (`accretive <https://pypi.org/project/accretive/>`_ on PyPI)
 
   🌌 A Python library package which provides **accretive data structures** - collections which can grow but never shrink.
-* `python-classcore <https://github.com/emcd/python-classcore>`_ (`classcore <https://pypi.org/project/classcore/>`_ on PyPI) 
+* `python-classcore <https://github.com/emcd/python-classcore>`_ (`classcore <https://pypi.org/project/classcore/>`_ on PyPI)
 
   🏭 A Python library package which provides **foundational class factories and decorators** for providing classes with attributes immutability and concealment and other custom behaviors.
-* `python-dynadoc <https://github.com/emcd/python-dynadoc>`_ (`dynadoc <https://pypi.org/project/dynadoc/>`_ on PyPI) 
+* `python-dynadoc <https://github.com/emcd/python-dynadoc>`_ (`dynadoc <https://pypi.org/project/dynadoc/>`_ on PyPI)
 
   📝 A Python library package which bridges the gap between **rich annotations** and **automatic documentation generation** with configurable renderers and support for reusable fragments.
-* `python-falsifier <https://github.com/emcd/python-falsifier>`_ (`falsifier <https://pypi.org/project/falsifier/>`_ on PyPI) 
+* `python-falsifier <https://github.com/emcd/python-falsifier>`_ (`falsifier <https://pypi.org/project/falsifier/>`_ on PyPI)
 
   🎭 A very simple Python library package which provides a **base class for falsey objects** - objects that evaluate to ``False`` in boolean contexts.
-* `python-frigid <https://github.com/emcd/python-frigid>`_ (`frigid <https://pypi.org/project/frigid/>`_ on PyPI) 
+* `python-frigid <https://github.com/emcd/python-frigid>`_ (`frigid <https://pypi.org/project/frigid/>`_ on PyPI)
 
   🔒 A Python library package which provides **immutable data structures** - collections which cannot be modified after creation.
-* `python-icecream-truck <https://github.com/emcd/python-icecream-truck>`_ (`icecream-truck <https://pypi.org/project/icecream-truck/>`_ on PyPI) 
+* `python-icecream-truck <https://github.com/emcd/python-icecream-truck>`_ (`icecream-truck <https://pypi.org/project/icecream-truck/>`_ on PyPI)
 
   🍦 **Flavorful Debugging** - A Python library which enhances the powerful and well-known ``icecream`` package with flavored traces, configuration hierarchies, customized outputs, ready-made recipes, and more.
-* `python-mimeogram <https://github.com/emcd/python-mimeogram>`_ (`mimeogram <https://pypi.org/project/mimeogram/>`_ on PyPI) 
+* `python-mimeogram <https://github.com/emcd/python-mimeogram>`_ (`mimeogram <https://pypi.org/project/mimeogram/>`_ on PyPI)
 
   📨 A command-line tool for **exchanging collections of files with Large Language Models** - bundle multiple files into a single clipboard-ready document while preserving directory structure and metadata... good for code reviews, project sharing, and LLM interactions.
