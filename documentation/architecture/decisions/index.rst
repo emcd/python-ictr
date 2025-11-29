@@ -21,11 +21,29 @@
 Architectural Decision Records
 *******************************************************************************
 
+This directory contains architectural decision records (ADRs) documenting
+significant design choices made during the project lifecycle. Each ADR
+captures the context, decision, alternatives considered, and consequences.
+
+Active Decisions
+===============================================================================
+
+001. :doc:`Layered Architecture with Protocol-Based Boundaries <001-layered-architecture>`
+    Separates concerns across dispatcher, reporter, textualizer, and printer
+    layers with protocol-based interfaces.
+
+002. :doc:`Hierarchical Configuration Following Package Structure <002-hierarchical-configuration>`
+    Configuration inheritance follows Python package hierarchy for
+    library-friendly isolation and application control.
+
+Superseded Decisions
+===============================================================================
+
+None yet.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :hidden:
 
-
-.. todo:: Add architectural decision records to toctree.
-
-For ADR format and guidance, see the `architecture documentation guide
-<https://emcd.github.io/python-project-common/stable/sphinx-html/common/architecture.html>`_.
+   001-layered-architecture
+   002-hierarchical-configuration

@@ -57,19 +57,40 @@ The main Python package follows the standard ``sources/`` directory pattern:
 .. code-block::
 
     sources/
-    ├── ictr/          # Main Python package
-    │   ├── __/                      # Centralized import hub
-    │   │   ├── __init__.py          # Re-exports core utilities
-    │   │   ├── imports.py           # External library imports
-    │   │   └── nomina.py            # python-ictr-specific naming constants
-    │   ├── __init__.py              # Package entry point
-    │   ├── py.typed                 # Type checking marker
-    │   ├── exceptions.py            # Package exception hierarchy
-    │   └── [modules].py             # Feature-specific modules
-    
+    └── ictr/                        # Main Python package
+        ├── __/                      # Centralized import hub
+        │   ├── __init__.py          # Re-exports core utilities
+        │   ├── imports.py           # External library imports
+        │   ├── miscellany.py        # Utility functions
+        │   ├── nomina.py            # Naming constants
+        │   └── validators.py        # Validation decorators
+        ├── __init__.py              # Package entry point
+        ├── py.typed                 # Type checking marker
+        ├── exceptions.py            # Exception hierarchy
+        ├── configuration.py         # Configuration dataclasses
+        ├── dispatchers.py           # Dispatcher entry points
+        ├── reporters.py             # Reporter coordination
+        ├── textualizers.py          # Textualizer protocols
+        ├── printers.py              # Printer protocols
+        ├── flavors.py               # Flavor specifications
+        ├── records.py               # Message records
+        ├── inspection.py            # Stack frame inspection
+        ├── standard/                # Standard recipes
+        │   ├── __.py                # Subpackage imports (inherits from parent)
+        │   ├── __init__.py          # Subpackage entry point
+        │   ├── core.py              # Core configuration dataclasses
+        │   ├── flavors.py           # Standard flavor definitions
+        │   ├── introducers.py       # Introduction formatters
+        │   ├── linearizers.py       # Content-to-lines converters
+        │   ├── textualizers.py      # Standard textualizer implementations
+        │   └── printers.py          # Standard printer implementations
+        └── _typedecls/              # Vendored type declarations
+            └── wcwidth/             # Terminal width calculation types
 
 All package modules use the standard ``__`` import pattern as documented
-in the common architecture guide.
+in the common architecture guide. The ``standard`` subpackage implements the
+cascading import pattern, inheriting parent imports via ``from ..__ import *``
+while adding specialized dependencies.
 
 Component Integration
 ===============================================================================
