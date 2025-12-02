@@ -115,6 +115,7 @@ dependencies = [
   'pre-commit',
   'pyright',
   'pytest',
+  'rich ~= 14.2',  # TEMP: Until https://github.com/pypa/hatch/pull/2127 is released.
   'ruff',
   'sphinx',
   'sphinx-copybutton',
