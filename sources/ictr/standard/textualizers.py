@@ -24,7 +24,7 @@
 from . import __
 from . import core as _core
 
-from .linearizers import linearize_omni as _linearize_omni
+from .linearizers import linearize as _linearize
 
 
 class Textualizer( __.Textualizer ):
@@ -87,7 +87,7 @@ def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
                 else auxdata.columns_max - prefix_ccount )
         case _core.ColumnsConstraints.Exceed:
             remainder_ccount = __.absent
-    lines = iter( _linearize_omni( auxdata, detail, remainder_ccount ) )
+    lines = iter( _linearize( auxdata, detail, remainder_ccount ) )
     lines_final: list[ str ] = [ ]
     line_i = next( lines )
     _update_lines_collection(
@@ -119,7 +119,7 @@ def _complect_render_summary(
         __.absent if __.is_absent( auxdata.columns_max )
         else auxdata.columns_max - prefix_ccount )
     lines_final: list[ str ] = [ ]
-    lines = _linearize_omni( auxdata, summary, remainder_ccount )
+    lines = _linearize( auxdata, summary, remainder_ccount )
     match len( lines ):
         case 0: raise __.SummaryLinearizationFailure( )
         case 1:
@@ -155,7 +155,7 @@ def _exceed_render_summary(
     configuration = auxdata.configuration
     line_prefix_i = configuration.line_prefix_initial
     lines_final: list[ str ] = [ ]
-    lines = _linearize_omni( auxdata, summary )
+    lines = _linearize( auxdata, summary )
     match len( lines ):
         case 0: raise __.SummaryLinearizationFailure( )
         case 1:

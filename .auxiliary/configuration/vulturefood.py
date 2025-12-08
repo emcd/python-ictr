@@ -49,3 +49,4 @@ auxiliaries
 recursive_stacktraces
 addresss
 enable_stacktraces
+linearizercfg

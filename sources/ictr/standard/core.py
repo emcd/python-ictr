@@ -143,10 +143,7 @@ class IntroducerConfiguration( __.immut.DataclassObject ):
     styles: __.typx.Annotated[
         InterpolantsStylesRegistry,
         __.ddoc.Doc(
-            ''' Mapping of interpolant names to style objects.
-
-                Ignored if not using ``rich``.
-            ''' ),
+            ''' Mapping of interpolant names to style objects. ''' ),
     ] = __.dcls.field( default_factory = InterpolantsStylesRegistry )
     template: __.typx.Annotated[
         str,
@@ -197,6 +194,36 @@ class IntroducerState( __.immut.DataclassObject ):
             control = control,
             colorize = colorize,
             columns_max = columns_max )
+
+
+class LinearizerConfiguration( __.immut.DataclassObject ):
+    ''' Behaviors for lines of text from standard linearizer. '''
+
+    colorize: __.typx.Annotated[
+        bool, __.typx.Doc( ''' Attempt to colorize? ''' )
+    ] = True
+    columns_constraint: __.typx.Annotated[
+        ColumnsConstraints,
+        __.ddoc.Doc(
+            ''' How to constrain text which exceeds maximum columns. ''' ),
+    ] = ColumnsConstraints.Complect
+    columns_max: __.typx.Annotated[
+        __.typx.Optional[ int ],
+        __.ddoc.Doc(
+            ''' How many columns per line to assume if printer does not tell.
+
+                If ``None``, then infinite number of columns is assumed.
+            ''' ),
+    ] = None
+    exceptionscfg: __.typx.Annotated[
+        ExceptionsConfiguration,
+        __.ddoc.Doc( ''' Configuration pertaining to exceptions. ''' ),
+    ] = __.dcls.field( default_factory = ExceptionsConfiguration )
+    incision_boundary: __.typx.Annotated[
+        IncisionBoundaries,
+        __.ddoc.Doc(
+            ''' Where to constrain text which exceeds maximum columns. ''' ),
+    ] = IncisionBoundaries.Wordsplits
 
 
 class TextualizerConfiguration( __.immut.DataclassObject ):
@@ -255,6 +282,11 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
                 visual width of the initial line prefix.
             ''' ),
     ] = None
+    linearizercfg: __.typx.Annotated[
+        LinearizerConfiguration,
+        __.ddoc.Doc(
+            ''' Text linearization and pretty-formatting behaviors. ''' ),
+    ] = __.dcls.field( default_factory = LinearizerConfiguration )
     summary_incision_ratio: __.typx.Annotated[
         float,
         __.ddoc.Doc(

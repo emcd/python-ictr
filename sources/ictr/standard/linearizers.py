@@ -25,6 +25,16 @@ from . import __
 from . import core as _core
 
 
+def linearize(
+    auxdata: _core.TextualizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> tuple[ str, ... ]:
+    if auxdata.colorize:
+        return linearize_omni_rich( auxdata, entity, columns_max )
+    return linearize_omni_plain( auxdata, entity, columns_max )
+
+
 def linearize_exception_plain(
     auxdata: _core.TextualizerState,
     exception: BaseException,
@@ -80,16 +90,6 @@ def linearize_object_rich(
     console = __.produce_rich_console( auxdata.control, capture, columns_max )
     console.print( entity )
     return tuple( capture.getvalue( ).split( '\n' ) )
-
-
-def linearize_omni(
-    auxdata: _core.TextualizerState,
-    entity: object,
-    columns_max: __.Absential[ int ] = __.absent,
-) -> tuple[ str, ... ]:
-    if auxdata.colorize:
-        return linearize_omni_rich( auxdata, entity, columns_max )
-    return linearize_omni_plain( auxdata, entity, columns_max )
 
 
 def linearize_omni_plain(
