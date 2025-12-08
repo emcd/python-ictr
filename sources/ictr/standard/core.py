@@ -197,7 +197,7 @@ class IntroducerState( __.immut.DataclassObject ):
 
 
 class LinearizerConfiguration( __.immut.DataclassObject ):
-    ''' Behaviors for lines of text from standard linearizer. '''
+    ''' Behaviors for standard textual linearizer. '''
 
     colorize: __.typx.Annotated[
         bool, __.typx.Doc( ''' Attempt to colorize? ''' )

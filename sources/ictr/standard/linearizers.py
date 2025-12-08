@@ -25,6 +25,24 @@ from . import __
 from . import core as _core
 
 
+class Linearizer( __.Linearizer ):
+
+    configuration: __.typx.Annotated[
+        _core.LinearizerConfiguration,
+        __.ddoc.Doc( ''' Default behaviors for textual linearizer. ''' ),
+    ] = __.dcls.field( default_factory = _core.LinearizerConfiguration )
+
+    def __call__(
+        self,
+        control: __.TextualizerControl,
+        entity: object,
+        columns_max: __.Absential[ int ] = __.absent,
+    ) -> tuple[ str, ... ]:
+        auxdata = _core.LinearizerState.from_configuration(
+            configuration = self.configuration, control = control )
+        return linearize_omni( auxdata, entity, columns_max = columns_max )
+
+
 def linearize_exception_plain(
     auxdata: _core.LinearizerState,
     exception: BaseException,

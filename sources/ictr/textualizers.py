@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Interfaces for textualizers, introducers, et cetera. '''
+''' Interfaces for compositors, introducers, et cetera. '''
 
 
 from . import __
@@ -42,6 +42,20 @@ class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
 
 
 IntroducerUnion: __.typx.TypeAlias = str | Introducer
+
+
+class Linearizer( __.immut.DataclassProtocol, __.typx.Protocol ):
+    ''' Abstract base class for linearizers. '''
+
+    @__.abc.abstractmethod
+    def __call__(
+        self,
+        control: _printers.TextualizerControl,
+        entity: object,
+        columns_max: __.Absential[ int ] = __.absent,
+    ) -> tuple[ str, ... ]:
+        ''' Renders object as lines of text. '''
+        raise NotImplementedError
 
 
 class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):

@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Textualizers, introducers, and various auxiliaries. '''
+''' Standard flavors, printers, and textualizers. '''
 
 
 from .core import *
