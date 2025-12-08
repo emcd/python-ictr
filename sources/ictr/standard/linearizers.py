@@ -25,18 +25,8 @@ from . import __
 from . import core as _core
 
 
-def linearize(
-    auxdata: _core.TextualizerState,
-    entity: object,
-    columns_max: __.Absential[ int ] = __.absent,
-) -> tuple[ str, ... ]:
-    if auxdata.colorize:
-        return linearize_omni_rich( auxdata, entity, columns_max )
-    return linearize_omni_plain( auxdata, entity, columns_max )
-
-
 def linearize_exception_plain(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     exception: BaseException,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -52,7 +42,7 @@ def linearize_exception_plain(
 
 
 def linearize_exception_rich(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     exception: BaseException,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -70,7 +60,7 @@ def linearize_exception_rich(
 
 
 def linearize_object_plain(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -82,7 +72,7 @@ def linearize_object_plain(
 
 
 def linearize_object_rich(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -92,8 +82,18 @@ def linearize_object_rich(
     return tuple( capture.getvalue( ).split( '\n' ) )
 
 
+def linearize_omni(
+    auxdata: _core.LinearizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> tuple[ str, ... ]:
+    if auxdata.colorize:
+        return linearize_omni_rich( auxdata, entity, columns_max )
+    return linearize_omni_plain( auxdata, entity, columns_max )
+
+
 def linearize_omni_plain(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -105,7 +105,7 @@ def linearize_omni_plain(
 
 
 def linearize_omni_rich(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -117,7 +117,7 @@ def linearize_omni_rich(
 
 
 def linearize_stacktrace_plain(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     stacktrace: __.tb.StackSummary,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -158,7 +158,7 @@ def linearize_stacktrace_plain(
 
 
 def linearize_stacktrace_rich(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     stacktrace: __.tb.StackSummary,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -178,7 +178,7 @@ def linearize_stacktrace_rich(
 
 
 def linearize_text_plain(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     text: str,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -201,7 +201,7 @@ def linearize_text_plain(
 
 
 def linearize_text_rich(
-    auxdata: _core.TextualizerState,
+    auxdata: _core.LinearizerState,
     text: str,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:

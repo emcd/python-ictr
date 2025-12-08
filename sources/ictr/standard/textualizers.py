@@ -24,7 +24,7 @@
 from . import __
 from . import core as _core
 
-from .linearizers import linearize as _linearize
+from .linearizers import linearize_omni as _linearize_omni
 
 
 class Textualizer( __.Textualizer ):
@@ -48,14 +48,15 @@ class Textualizer( __.Textualizer ):
         self, control: __.TextualizerControl, record: __.Record
     ) -> str:
         configuration = self.configuration
-        ecfg = configuration.exceptionscfg
+        ecfg = configuration.linearizercfg.exceptionscfg
         auxdata = _core.TextualizerState.from_configuration(
             configuration = configuration, control = control )
         content = record.content
         introducer = self.introducer
         introduction = (
             introducer if isinstance( introducer, str )
-            else introducer( control, record, auxdata.columns_max ) )
+            else introducer(
+                control, record, auxdata.linearizer.columns_max ) )
         if isinstance( content, __.MessageContent ):
             summary_ = content.summary
             exception = (
@@ -72,6 +73,7 @@ class Textualizer( __.Textualizer ):
 
 def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
     configuration = auxdata.configuration
+    columns_max = auxdata.linearizer.columns_max
     detail_prefix_i = configuration.detail_prefix_initial
     detail_prefix_i_ccount = __.count_columns_visual( detail_prefix_i )
     detail_prefix_s = configuration.detail_prefix_subsequent
@@ -80,14 +82,15 @@ def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
     line_prefix_s = configuration.line_prefix_subsequent
     prefix_ccount = (
         __.count_columns_visual( line_prefix_s ) + detail_prefix_i_ccount )
-    match auxdata.columns_constraint:
+    match auxdata.linearizer.columns_constraint:
         case _core.ColumnsConstraints.Complect:
             remainder_ccount = (
-                __.absent if __.is_absent( auxdata.columns_max )
-                else auxdata.columns_max - prefix_ccount )
+                __.absent if __.is_absent( columns_max )
+                else columns_max - prefix_ccount )
         case _core.ColumnsConstraints.Exceed:
             remainder_ccount = __.absent
-    lines = iter( _linearize( auxdata, detail, remainder_ccount ) )
+    lines = iter( _linearize_omni(
+        auxdata.linearizer, detail, remainder_ccount ) )
     lines_final: list[ str ] = [ ]
     line_i = next( lines )
     _update_lines_collection(
@@ -100,7 +103,7 @@ def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
 def _render_summary(
     auxdata: _core.TextualizerState, introduction: str, summary: object
 ) -> str:
-    match auxdata.columns_constraint:
+    match auxdata.linearizer.columns_constraint:
         case _core.ColumnsConstraints.Complect:
             return _complect_render_summary( auxdata, introduction, summary )
         case _core.ColumnsConstraints.Exceed:
@@ -111,31 +114,31 @@ def _complect_render_summary(
     auxdata: _core.TextualizerState, introduction: str, summary: object
 ) -> str:
     configuration = auxdata.configuration
+    columns_max = auxdata.linearizer.columns_max
     line_prefix_i = configuration.line_prefix_initial
     line_prefix_s = configuration.line_prefix_subsequent
     intro_ccount = __.count_columns_visual( introduction )
     prefix_ccount = __.count_columns_visual( line_prefix_s )
     remainder_ccount = (
-        __.absent if __.is_absent( auxdata.columns_max )
-        else auxdata.columns_max - prefix_ccount )
+        __.absent if __.is_absent( columns_max )
+        else columns_max - prefix_ccount )
     lines_final: list[ str ] = [ ]
-    lines = _linearize( auxdata, summary, remainder_ccount )
+    lines = _linearize_omni( auxdata.linearizer, summary, remainder_ccount )
     match len( lines ):
         case 0: raise __.SummaryLinearizationFailure( )
         case 1:
             content = lines[ 0 ]
             incision_point = 0
-            if not __.is_absent( auxdata.columns_max ):
+            if not __.is_absent( columns_max ):
                 incision_point = (
-                        configuration.summary_incision_ratio
-                    *   auxdata.columns_max )
+                        configuration.summary_incision_ratio * columns_max )
             isolate_introduction = incision_point <= intro_ccount
             if not isolate_introduction:
                 candidate = f"{introduction} {content}"
                 candidate_ccount = (
                         prefix_ccount + intro_ccount
                     +   __.count_columns_visual( content ) + 1 )
-                if candidate_ccount <= auxdata.columns_max:
+                if candidate_ccount <= columns_max:
                     lines_final.append( f"{line_prefix_i}{candidate}" )
                 else:
                     _update_lines_collection(
@@ -155,7 +158,7 @@ def _exceed_render_summary(
     configuration = auxdata.configuration
     line_prefix_i = configuration.line_prefix_initial
     lines_final: list[ str ] = [ ]
-    lines = _linearize( auxdata, summary )
+    lines = _linearize_omni( auxdata.linearizer, summary )
     match len( lines ):
         case 0: raise __.SummaryLinearizationFailure( )
         case 1:

@@ -226,25 +226,45 @@ class LinearizerConfiguration( __.immut.DataclassObject ):
     ] = IncisionBoundaries.Wordsplits
 
 
+class LinearizerState( __.immut.DataclassObject ):
+    ''' Data transfer object for linearizer state. '''
+
+    configuration: LinearizerConfiguration
+    control: __.TextualizerControl
+    colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
+    columns_constraint: __.typx.Annotated[
+        ColumnsConstraints,
+        __.ddoc.Doc( ''' Effective columns constraint for lines. ''' ),
+    ] = ColumnsConstraints.Exceed
+    columns_max: __.typx.Annotated[
+        __.Absential[ int ],
+        __.ddoc.Doc(
+            ''' Available line length (maximum columns) of target. ''' ),
+    ] = __.absent
+
+    @classmethod
+    def from_configuration(
+        cls,
+        configuration: LinearizerConfiguration,
+        control: __.TextualizerControl,
+    ) -> __.typx.Self:
+        colorize = __.ENRICH and control.colorize and configuration.colorize
+        columns_constraint = configuration.columns_constraint
+        columns_max = control.columns_max or configuration.columns_max
+        if columns_max is None:
+            columns_constraint = ColumnsConstraints.Exceed
+            columns_max = __.absent
+        return cls(
+            configuration = configuration,
+            control = control,
+            colorize = colorize,
+            columns_constraint = columns_constraint,
+            columns_max = columns_max )
+
+
 class TextualizerConfiguration( __.immut.DataclassObject ):
     ''' Behaviors and format for text from standard textualizer. '''
 
-    colorize: __.typx.Annotated[
-        bool, __.typx.Doc( ''' Attempt to colorize? ''' )
-    ] = True
-    columns_constraint: __.typx.Annotated[
-        ColumnsConstraints,
-        __.ddoc.Doc(
-            ''' How to constrain text which exceeds maximum columns. ''' ),
-    ] = ColumnsConstraints.Complect
-    columns_max: __.typx.Annotated[
-        __.typx.Optional[ int ],
-        __.ddoc.Doc(
-            ''' How many columns per line to assume if printer does not tell.
-
-                If ``None``, then infinite number of columns is assumed.
-            ''' ),
-    ] = None
     detail_prefix_initial: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Initial prefix for message detail. ''' )
     ] = ''
@@ -261,15 +281,6 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
     details_separator: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Separator between details. ''' )
     ] = '\n\n'
-    exceptionscfg: __.typx.Annotated[
-        ExceptionsConfiguration,
-        __.ddoc.Doc( ''' Configuration pertaining to exceptions. ''' ),
-    ] = __.dcls.field( default_factory = ExceptionsConfiguration )
-    incision_boundary: __.typx.Annotated[
-        IncisionBoundaries,
-        __.ddoc.Doc(
-            ''' Where to constrain text which exceeds maximum columns. ''' ),
-    ] = IncisionBoundaries.Wordsplits
     line_prefix_initial: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Prefix before first line. ''' )
     ] = ''
@@ -302,17 +313,7 @@ class TextualizerState( __.immut.DataclassObject ):
     ''' Data transfer object for textualizer state. '''
 
     configuration: TextualizerConfiguration
-    control: __.TextualizerControl
-    colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
-    columns_constraint: __.typx.Annotated[
-        ColumnsConstraints,
-        __.ddoc.Doc( ''' Effective columns constraint for lines. ''' ),
-    ] = ColumnsConstraints.Exceed
-    columns_max: __.typx.Annotated[
-        __.Absential[ int ],
-        __.ddoc.Doc(
-            ''' Available line length (maximum columns) of target. ''' ),
-    ] = __.absent
+    linearizer: LinearizerState
 
     @classmethod
     def from_configuration(
@@ -320,18 +321,9 @@ class TextualizerState( __.immut.DataclassObject ):
         configuration: TextualizerConfiguration,
         control: __.TextualizerControl,
     ) -> __.typx.Self:
-        colorize = __.ENRICH and control.colorize and configuration.colorize
-        columns_constraint = configuration.columns_constraint
-        columns_max = control.columns_max or configuration.columns_max
-        if columns_max is None:
-            columns_constraint = ColumnsConstraints.Exceed
-            columns_max = __.absent
-        return cls(
-            configuration = configuration,
-            control = control,
-            colorize = colorize,
-            columns_constraint = columns_constraint,
-            columns_max = columns_max )
+        linearizer = LinearizerState.from_configuration(
+            configuration = configuration.linearizercfg, control = control )
+        return cls( configuration = configuration, linearizer = linearizer )
 
 
 INTRODUCER_CONFIGURATION_DEFAULT = IntroducerConfiguration( )

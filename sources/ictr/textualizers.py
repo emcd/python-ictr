@@ -74,16 +74,18 @@ def produce_textualizer_factory_default(
     ) -> Textualizer:
         from .standard import (
             ExceptionsConfiguration,
+            LinearizerConfiguration,
             Textualizer,
             TextualizerConfiguration,
         )
         ecfg = ExceptionsConfiguration(
             enable_discovery = trace_exceptions,
             enable_stacktraces = trace_exceptions )
+        lcfg = LinearizerConfiguration( exceptionscfg = ecfg )
         tcfg = TextualizerConfiguration(
-            exceptionscfg = ecfg,
             line_prefix_initial = line_prefix_initial,
-            line_prefix_subsequent = line_prefix_subsequent )
+            line_prefix_subsequent = line_prefix_subsequent,
+            linearizercfg = lcfg )
         if __.is_absent( introducer ):
             return Textualizer( configuration = tcfg )
         return Textualizer( configuration = tcfg, introducer = introducer )
