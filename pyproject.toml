@@ -49,7 +49,7 @@ keywords = [ 'logging', 'debug', 'print', 'introspection' ]
 name = 'Eric McDonald'
 email = 'emcd@users.noreply.github.com'
 [project.optional-dependencies]
-deluxe = [ 'rich ~= 14.2' ]
+deluxe = [ 'rich ~= 13.0' ]
 [project.urls]
 'Homepage' = 'https://github.com/emcd/python-ictr'
 'Documentation' = 'https://emcd.github.io/python-ictr'
@@ -115,7 +115,6 @@ dependencies = [
   'pre-commit',
   'pyright',
   'pytest',
-  'rich ~= 14.2',  # TEMP: Until https://github.com/pypa/hatch/pull/2127 is released.
   'ruff',
   'sphinx',
   'sphinx-copybutton',
