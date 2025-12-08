@@ -29,10 +29,12 @@ Active Decisions
 ===============================================================================
 
 001. :doc:`Layered Architecture with Protocol-Based Boundaries <001-layered-architecture>`
+
     Separates concerns across dispatcher, reporter, textualizer, and printer
     layers with protocol-based interfaces.
 
 002. :doc:`Hierarchical Configuration Following Package Structure <002-hierarchical-configuration>`
+
     Configuration inheritance follows Python package hierarchy for
     library-friendly isolation and application control.
 
