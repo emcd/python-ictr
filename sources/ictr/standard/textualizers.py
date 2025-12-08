@@ -45,7 +45,7 @@ class Textualizer( __.Textualizer ):
     ] = f"{__.package_name}| "
 
     def __call__(
-        self, control: __.TextualizerControl, record: __.Record
+        self, control: __.TextualizationControl, record: __.Record
     ) -> str:
         configuration = self.configuration
         ecfg = configuration.linearizercfg.exceptionscfg

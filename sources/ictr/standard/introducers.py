@@ -36,7 +36,7 @@ class Introducer( __.Introducer ):
 
     def __call__(
         self,
-        control: __.TextualizerControl,
+        control: __.TextualizationControl,
         record: __.Record,
         columns_max: __.Absential[ int ] = __.absent,
     ) -> str:

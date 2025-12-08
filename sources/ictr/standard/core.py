@@ -173,7 +173,7 @@ class IntroducerState( __.immut.DataclassObject ):
     ''' Data transfer object for introducer state. '''
 
     configuration: IntroducerConfiguration
-    control: __.TextualizerControl
+    control: __.TextualizationControl
     colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
     columns_max: __.typx.Annotated[
         __.Absential[ int ],
@@ -185,7 +185,7 @@ class IntroducerState( __.immut.DataclassObject ):
     def from_configuration(
         cls,
         configuration: IntroducerConfiguration,
-        control: __.TextualizerControl,
+        control: __.TextualizationControl,
         columns_max: __.Absential[ int ] = __.absent,
     ) -> __.typx.Self:
         colorize = __.ENRICH and control.colorize and configuration.colorize
@@ -230,7 +230,7 @@ class LinearizerState( __.immut.DataclassObject ):
     ''' Data transfer object for linearizer state. '''
 
     configuration: LinearizerConfiguration
-    control: __.TextualizerControl
+    control: __.TextualizationControl
     colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
     columns_constraint: __.typx.Annotated[
         ColumnsConstraints,
@@ -246,7 +246,7 @@ class LinearizerState( __.immut.DataclassObject ):
     def from_configuration(
         cls,
         configuration: LinearizerConfiguration,
-        control: __.TextualizerControl,
+        control: __.TextualizationControl,
     ) -> __.typx.Self:
         colorize = __.ENRICH and control.colorize and configuration.colorize
         columns_constraint = configuration.columns_constraint
@@ -319,7 +319,7 @@ class TextualizerState( __.immut.DataclassObject ):
     def from_configuration(
         cls,
         configuration: TextualizerConfiguration,
-        control: __.TextualizerControl,
+        control: __.TextualizationControl,
     ) -> __.typx.Self:
         linearizer = LinearizerState.from_configuration(
             configuration = configuration.linearizercfg, control = control )

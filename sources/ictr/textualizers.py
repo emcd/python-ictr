@@ -33,7 +33,7 @@ class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
     @__.abc.abstractmethod
     def __call__(
         self,
-        control: _printers.TextualizerControl,
+        control: _printers.TextualizationControl,
         record: _records.Record,
         columns_max: __.Absential[ int ] = __.absent,
     ) -> str:
@@ -50,7 +50,7 @@ class Linearizer( __.immut.DataclassProtocol, __.typx.Protocol ):
     @__.abc.abstractmethod
     def __call__(
         self,
-        control: _printers.TextualizerControl,
+        control: _printers.TextualizationControl,
         entity: object,
         columns_max: __.Absential[ int ] = __.absent,
     ) -> tuple[ str, ... ]:
@@ -63,7 +63,7 @@ class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
 
     @__.abc.abstractmethod
     def __call__(
-        self, control: _printers.TextualizerControl, record: _records.Record
+        self, control: _printers.TextualizationControl, record: _records.Record
     ) -> str:
         ''' Renders record as text. '''
         raise NotImplementedError
@@ -71,7 +71,8 @@ class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
 
 TextualizerFactory: __.typx.TypeAlias = (
     __.typx.Callable[
-        [ _printers.TextualizerControl, str, _flavors.Flavor ], Textualizer ] )
+        [ _printers.TextualizationControl, str, _flavors.Flavor ],
+        Textualizer ] )
 
 
 def produce_textualizer_factory_default(
@@ -82,7 +83,7 @@ def produce_textualizer_factory_default(
 ) -> TextualizerFactory:
     ''' Produces default textualizer factory. '''
     def produce_textualizer(
-        control: _printers.TextualizerControl,
+        control: _printers.TextualizationControl,
         addresss: str,
         flavor: _flavors.Flavor,
     ) -> Textualizer:

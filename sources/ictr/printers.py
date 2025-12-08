@@ -51,7 +51,7 @@ ColumnsMaxCalculator: __.typx.TypeAlias = __.typx.Annotated[
 ]
 
 
-class TextualizerControl( __.immut.DataclassObject ):
+class TextualizationControl( __.immut.DataclassObject ):
     ''' Contextual data for textualizer and introducer factories. '''
 
     charset: __.typx.Annotated[
@@ -87,7 +87,7 @@ class Printer( __.immut.DataclassProtocol, __.typx.Protocol ):
     @__.abc.abstractmethod
     def provide_textualizer_control(
         self
-    ) -> __.typx.Optional[ TextualizerControl ]:
+    ) -> __.typx.Optional[ TextualizationControl ]:
         ''' Provides control object for textualizer, if capable. '''
         raise NotImplementedError
 

@@ -306,17 +306,17 @@ Test Module: test_200_textualizers.py
 
 Basic functionality tests (000-099)
   Test 000: Textualizer protocol basic usage
-  Test 010: TextualizerControl basic functionality
+  Test 010: TextualizationControl basic functionality
 
 Factory function tests (100-199)
   Test 100: produce_textualizer_factory_default with string introducer
   Test 110: produce_textualizer_factory_default with callable introducer
   Test 120: produce_textualizer_factory_default with configuration
 
-TextualizerControl tests (200-299)
-  Test 200: TextualizerControl with printer providing columns_max
-  Test 210: TextualizerControl with printer not providing columns_max
-  Test 220: TextualizerControl caching behavior
+TextualizationControl tests (200-299)
+  Test 200: TextualizationControl with printer providing columns_max
+  Test 210: TextualizationControl with printer not providing columns_max
+  Test 220: TextualizationControl caching behavior
 
 Printer interaction tests (300-399)
   Test 300: Printer with columns_max attribute

@@ -189,7 +189,7 @@ class Dispatcher( __.immut.DataclassObject ):
             with self.reporters_mutex:
                 return self.reporters[ cache_index ]
         configuration = _produce_ic_configuration( self, address, flavor )
-        control = _printers.TextualizerControl( )
+        control = _printers.TextualizationControl( )
         if isinstance( flavor, int ):
             trace_level = (
                 _calculate_effective_trace_level( self.trace_levels, address) )

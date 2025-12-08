@@ -44,7 +44,7 @@ class Printer( __.Printer ):
 
     def provide_textualizer_control(
         self
-    ) -> __.typx.Optional[ __.TextualizerControl ]:
+    ) -> __.typx.Optional[ __.TextualizationControl ]:
         tty = self.target.isatty( )
         colorize = tty
         if __.os.environ.get( 'NO_COLOR' ): colorize = False
@@ -52,6 +52,6 @@ class Printer( __.Printer ):
         columns_max_calculator = (
             __.produce_columns_max_calculator( self.target ) )
         # TODO: Get encoding from target.
-        return __.TextualizerControl(
+        return __.TextualizationControl(
             colorize = colorize,
             columns_max_calculator = columns_max_calculator )

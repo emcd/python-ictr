@@ -43,7 +43,7 @@ try:
     ENRICH = True  # pyright: ignore[reportConstantRedefinition]
 
     def produce_rich_console(
-        control: TextualizerControl,
+        control: TextualizationControl,
         capture: typx.IO[ str ],
         columns_max: Absential[ int ] = absent,
     ) -> rich_console.Console:

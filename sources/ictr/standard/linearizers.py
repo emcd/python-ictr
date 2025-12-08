@@ -34,7 +34,7 @@ class Linearizer( __.Linearizer ):
 
     def __call__(
         self,
-        control: __.TextualizerControl,
+        control: __.TextualizationControl,
         entity: object,
         columns_max: __.Absential[ int ] = __.absent,
     ) -> tuple[ str, ... ]:
