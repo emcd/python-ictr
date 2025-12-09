@@ -25,6 +25,7 @@
 
 import                      abc
 import collections.abc as   cabc
+import                      codecs
 import dataclasses as       dcls
 import                      enum
 import functools as         funct

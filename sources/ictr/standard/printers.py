@@ -48,8 +48,11 @@ class Printer( __.Printer ):
         colorize = self._determine_colorization( )
         columns_max_calculator = (
             __.produce_columns_max_calculator( self.target ) )
-        # TODO: Get encoding from target.
+        charset = getattr( self.target, 'encoding', None )
+        if charset:
+            charset = __.codecs.lookup( charset ).name  # normalize
         return __.TextualizationControl(
+            charset = charset,
             colorize = colorize,
             columns_max_calculator = columns_max_calculator )
 
