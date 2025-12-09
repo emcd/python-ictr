@@ -73,7 +73,7 @@ Test modules follow architectural layering with systematic numbering:
   - test_130_exceptions.py - Package exception hierarchy
 
 **200-299: Protocols and Interfaces**
-  - test_200_compositors.py - Compositor protocol and factories
+  - test_200_textualizers.py - Compositor, Linearizer, and Introducer protocols
   - test_210_printers.py - Printer protocol and factories
 
 **300-399: Core Layer Implementations**

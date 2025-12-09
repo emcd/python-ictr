@@ -296,7 +296,7 @@ Exception behavior tests (200-299)
   Test 210: Exception messages are properly formatted
   Test 220: Exception repr and str methods
 
-Test Module: test_200_compositors.py
+Test Module: test_200_textualizers.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Module under test**: ``sources/ictr/textualizers.py`` (60% coverage,
@@ -304,24 +304,32 @@ Test Module: test_200_compositors.py
 
 **Uncovered lines**: Factory functions and protocol defaults
 
+Note: This module contains protocols for both Compositor and Linearizer,
+plus the Introducer protocol. The module name reflects the textualization
+process that these protocols support.
+
 Basic functionality tests (000-099)
   Test 000: Compositor protocol basic usage
-  Test 010: TextualizationControl basic functionality
+  Test 010: Linearizer protocol basic usage
+  Test 020: Introducer protocol basic usage
 
-Factory function tests (100-199)
-  Test 100: produce_compositor_factory_default with string introducer
-  Test 110: produce_compositor_factory_default with callable introducer
-  Test 120: produce_compositor_factory_default with configuration
+Compositor protocol tests (100-199)
+  Test 100: Compositor.__call__ signature validation
+  Test 110: CompositorFactory type alias usage
 
-TextualizationControl tests (200-299)
-  Test 200: TextualizationControl with printer providing columns_max
-  Test 210: TextualizationControl with printer not providing columns_max
-  Test 220: TextualizationControl caching behavior
+Linearizer protocol tests (200-299)
+  Test 200: Linearizer.__call__ signature validation
+  Test 210: Linearizer returns tuple of strings
 
-Printer interaction tests (300-399)
-  Test 300: Printer with columns_max attribute
-  Test 310: Printer without columns_max attribute
-  Test 320: Printer with callable columns_max
+Introducer protocol tests (300-399)
+  Test 300: Introducer.__call__ signature validation
+  Test 310: IntroducerUnion accepts string or Introducer
+
+Factory function tests (400-499)
+  Test 400: produce_compositor_factory_default with string introducer
+  Test 410: produce_compositor_factory_default with callable introducer
+  Test 420: produce_compositor_factory_default with configuration
+  Test 430: produce_compositor_factory_default with trace_exceptions enabled
 
 Test Module: test_210_printers.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
