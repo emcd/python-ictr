@@ -18,7 +18,7 @@
 #============================================================================#
 
 
-''' Standard textualizer and renderers. '''
+''' Standard compositor and renderers. '''
 
 
 from . import __
@@ -27,13 +27,13 @@ from . import core as _core
 from .linearizers import linearize_omni as _linearize_omni
 
 
-class Textualizer( __.Textualizer ):
-    ''' Standard textualizer. '''
+class Compositor( __.Compositor ):
+    ''' Standard compositor. '''
 
     configuration: __.typx.Annotated[
-        _core.TextualizerConfiguration,
+        _core.CompositorConfiguration,
         __.ddoc.Doc( ''' Default behaviors and format for text. ''' ),
-    ] = __.dcls.field( default_factory = _core.TextualizerConfiguration )
+    ] = __.dcls.field( default_factory = _core.CompositorConfiguration )
     introducer: __.typx.Annotated[
         __.IntroducerUnion,
         __.ddoc.Doc(
@@ -49,7 +49,7 @@ class Textualizer( __.Textualizer ):
     ) -> str:
         configuration = self.configuration
         ecfg = configuration.linearizercfg.exceptionscfg
-        auxdata = _core.TextualizerState.from_configuration(
+        auxdata = _core.CompositorState.from_configuration(
             configuration = configuration, control = control )
         content = record.content
         introducer = self.introducer
@@ -71,7 +71,7 @@ class Textualizer( __.Textualizer ):
         raise __.ContentMisclassification( type( content ) )
 
 
-def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
+def _render_detail( auxdata: _core.CompositorState, detail: object ) -> str:
     configuration = auxdata.configuration
     columns_max = auxdata.linearizer.columns_max
     detail_prefix_i = configuration.detail_prefix_initial
@@ -101,7 +101,7 @@ def _render_detail( auxdata: _core.TextualizerState, detail: object ) -> str:
 
 
 def _render_summary(
-    auxdata: _core.TextualizerState, introduction: str, summary: object
+    auxdata: _core.CompositorState, introduction: str, summary: object
 ) -> str:
     match auxdata.linearizer.columns_constraint:
         case _core.ColumnsConstraints.Complect:
@@ -111,7 +111,7 @@ def _render_summary(
 
 
 def _complect_render_summary(
-    auxdata: _core.TextualizerState, introduction: str, summary: object
+    auxdata: _core.CompositorState, introduction: str, summary: object
 ) -> str:
     configuration = auxdata.configuration
     columns_max = auxdata.linearizer.columns_max
@@ -153,7 +153,7 @@ def _complect_render_summary(
 
 
 def _exceed_render_summary(
-    auxdata: _core.TextualizerState, introduction: str, summary: object
+    auxdata: _core.CompositorState, introduction: str, summary: object
 ) -> str:
     configuration = auxdata.configuration
     line_prefix_i = configuration.line_prefix_initial
@@ -171,7 +171,7 @@ def _exceed_render_summary(
 
 
 def _update_lines_collection(
-    configuration: _core.TextualizerConfiguration,
+    configuration: _core.CompositorConfiguration,
     collector: list[ str ],
     line_initial: str,
     lines_subsequent: __.typx.Optional[ tuple[ str, ... ] ] = None,

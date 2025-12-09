@@ -35,7 +35,7 @@ class Reporter( __.immut.DataclassObject ):
     active: bool  # TODO? Also accept predicate function to decide if active.
     address: str
     flavor: _flavors.Flavor
-    textualizer: _texts.Textualizer
+    compositor: _texts.Compositor
     printer: _printers.Printer
 
     def __call__(
@@ -50,9 +50,9 @@ class Reporter( __.immut.DataclassObject ):
             summary = summary, details = details )
         record = _records.Record(
             address = self.address, content = content, flavor = self.flavor )
-        tcontrol = self.printer.provide_textualizer_control( )
+        tcontrol = self.printer.provide_textualization_control( )
         if tcontrol is None: self.printer( record )
-        else: self.printer( self.textualizer( tcontrol, record ) )
+        else: self.printer( self.compositor( tcontrol, record ) )
 
     # TODO: inscribe (same as __call__)
     # TODO: inscribe_async

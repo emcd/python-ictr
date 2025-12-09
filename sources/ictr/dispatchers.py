@@ -35,12 +35,12 @@ _registrar_mutex: __.threads.Lock = __.threads.Lock( )
 _self_addresscfg: _cfg.AddressConfiguration = _cfg.AddressConfiguration(
     flavors = __.immut.Dictionary(
         note = _cfg.FlavorConfiguration(
-            textualizer_factory = (
-                _texts.produce_textualizer_factory_default(
+            compositor_factory = (
+                _texts.produce_compositor_factory_default(
                     introducer = 'NOTE| ' ) ) ),
         error = _cfg.FlavorConfiguration(
-            textualizer_factory = (
-                _texts.produce_textualizer_factory_default(
+            compositor_factory = (
+                _texts.produce_compositor_factory_default(
                     introducer = 'ERROR| ' ) ) ) ) )
 _validate_arguments = (
     __.validate_arguments(
@@ -150,8 +150,8 @@ class Dispatcher( __.immut.DataclassObject ):
 
                 May also be writable text stream.
                 Factories take two arguments, address and flavor, and
-                return a callable which takes one argument, the string
-                produced by a textualizer.
+                return a callable which takes one argument, a record
+                or the string produced by a textualizer.
             ''' ),
     ] = _printers.produce_printer_factory_default( __.sys.stderr )
     reporters: __.typx.Annotated[
@@ -200,12 +200,12 @@ class Dispatcher( __.immut.DataclassObject ):
             active = (
                 isinstance( active_flavors, Omniflavor )
                 or flavor in active_flavors )
-        textualizer = configuration[ 'textualizer_factory' ](
+        compositor = configuration[ 'compositor_factory' ](
             control, address, flavor )
         printer = _resolve_printer( self, address, flavor )
         reporter = _reporters.Reporter(
             active = active, address = address, flavor = flavor,
-            textualizer = textualizer, printer = printer )
+            compositor = compositor, printer = printer )
         with self.reporters_mutex:
             self.reporters[ cache_index ] = reporter
         return reporter
@@ -264,6 +264,31 @@ ActiveFlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
             Address-specific entries merge with global entries.
         ''' ),
 ]
+AddressArgument: __.typx.TypeAlias = __.typx.Annotated[
+    __.Absential[ str ],
+    __.typx.Doc(
+        ''' Address to register.
+
+            If absent, infers the invoking module name as the address.
+        ''' ),
+]
+AddresscfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
+    __.Absential[ AddressesConfigurationsRegistryLiberal ],
+    __.typx.Doc(
+        ''' Address configurations for the dispatcher.
+
+            If absent, defaults to global addresses registry.
+        ''' ),
+]
+CompositorFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
+    __.Absential[ _texts.CompositorFactory ],
+    __.typx.Doc(
+        ''' Factory which produces compositor callable.
+
+            Takes textualization control, address, and flavor as arguments.
+            Returns compositor to convert record content to a string.
+        ''' ),
+]
 EvnActiveFlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ __.typx.Optional[ str ] ],
     __.typx.Doc(
@@ -298,15 +323,6 @@ FlavorsArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ _cfg.FlavorsRegistryLiberal ],
     __.typx.Doc( ''' Registry of flavor identifiers to configurations. ''' ),
 ]
-TextualizerFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ _texts.TextualizerFactory ],
-    __.typx.Doc(
-        ''' Factory which produces textualizer callable.
-
-            Takes textualizer control, address, and flavor as arguments.
-            Returns textualizer to convert record content to a string.
-        ''' ),
-]
 GeneralcfgArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.Absential[ _cfg.DispatcherConfiguration ],
     __.typx.Doc(
@@ -330,24 +346,8 @@ IntroducerArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.typx.Doc(
         ''' String or factory which produces message introduction.
 
-            Factory takes textualizer control, address, and flavor as
+            Factory takes textualization control, address, and flavor as
             arguments. Returns introduction string.
-        ''' ),
-]
-AddressArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ str ],
-    __.typx.Doc(
-        ''' Address to register.
-
-            If absent, infers the invoking module name as the address.
-        ''' ),
-]
-AddresscfgsArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ AddressesConfigurationsRegistryLiberal ],
-    __.typx.Doc(
-        ''' Address configurations for the dispatcher.
-
-            If absent, defaults to global addresses registry.
         ''' ),
 ]
 PrinterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
@@ -357,8 +357,8 @@ PrinterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
 
             May also be writable text stream.
             Factories take two arguments, address and flavor, and
-            return a callable which takes one argument, the string
-            produced by a textualizer.
+            return a callable which takes one argument, a record or
+            the string produced by a textualizer.
 
             If absent, uses a default.
         ''' ),
@@ -480,7 +480,7 @@ def produce_dispatcher( # noqa: PLR0913
 def register_address(
     name: AddressArgument = __.absent,
     flavors: FlavorsArgument = __.absent,
-    textualizer_factory: TextualizerFactoryArgument = __.absent,
+    compositor_factory: CompositorFactoryArgument = __.absent,
     include_context: IncludeContextArgument = __.absent,
     introducer: IntroducerArgument = __.absent,
 ) -> _cfg.AddressConfiguration:
@@ -504,8 +504,8 @@ def register_address(
     nomargs: dict[ str, __.typx.Any ] = { }
     if not __.is_absent( flavors ):
         nomargs[ 'flavors' ] = __.immut.Dictionary( flavors )
-    if not __.is_absent( textualizer_factory ):
-        nomargs[ 'textualizer_factory' ] = textualizer_factory
+    if not __.is_absent( compositor_factory ):
+        nomargs[ 'compositor_factory' ] = compositor_factory
     if not __.is_absent( include_context ):
         nomargs[ 'include_context' ] = include_context
     if not __.is_absent( introducer ):
@@ -618,7 +618,7 @@ def _merge_ic_configuration(
     result[ 'flavors' ] = (
             dict( base.get( 'flavors', dict( ) ) )
         |   dict( update.get( 'flavors', dict( ) ) ) )
-    for ename in ( 'textualizer_factory', 'include_context', 'introducer' ):
+    for ename in ( 'compositor_factory', 'include_context', 'introducer' ):
         uvalue = update.get( ename )
         if uvalue is not None: result[ ename ] = uvalue
         elif ename in base: result[ ename ] = base[ ename ]

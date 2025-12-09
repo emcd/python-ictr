@@ -38,7 +38,7 @@ Current State
 
   - Dispatchers (24% coverage, 161 uncovered lines)
   - Standard linearizers (11% coverage, 84 uncovered lines)
-  - Standard textualizers (10% coverage, 81 uncovered lines)
+  - Standard compositors (10% coverage, 81 uncovered lines)
   - Standard introducers (14% coverage, 56 uncovered lines)
 
 - **Well-covered modules**:
@@ -111,14 +111,14 @@ Create example documents that will naturally exercise core functionality:
   Rich library integration
 
   - Exercises: Rich detection, colorized output, graceful fallback
-  - Covers: Rich textualizer, Rich console creation, plain fallback
+  - Covers: Rich compositor, Rich console creation, plain fallback
   - Demonstrates: Optional Rich features
 
 **examples/custom-formatting.rst** (maps to REQ-017, REQ-018)
   Extension points and customization
 
-  - Exercises: Custom textualizers, custom printers, factory patterns
-  - Covers: Textualizer protocol, printer protocol, factory injection
+  - Exercises: Custom compositors, custom printers, factory patterns
+  - Covers: Compositor protocol, printer protocol, factory injection
   - Demonstrates: File output, custom introducers
 
 Expected Doctest Coverage Impact
@@ -128,7 +128,7 @@ Examples will naturally cover:
 
 - Dispatcher initialization and basic routing (~50% of dispatcher gaps)
 - Standard flavor usage (most of standard/flavors.py)
-- Basic textualizer flow (introduction + content rendering)
+- Basic compositor flow (introduction + content rendering)
 - Common printer usage (stderr default)
 - Configuration creation and application
 - Happy-path linearizers (plain text, simple exceptions)
@@ -162,7 +162,7 @@ Based on architectural layering and existing numbering:
 
 - **200-299**: Protocols and interfaces
 
-  - test_200_textualizers.py (Textualizer protocol, base factory)
+  - test_200_compositors.py (Compositor protocol, base factory)
   - test_210_printers.py (Printer protocol, base factory)
 
 - **300-399**: Core layer implementations
@@ -176,11 +176,11 @@ Based on architectural layering and existing numbering:
 
 - **500-699**: Standard recipe implementations
 
-  - test_500_standard_core.py (TextualizerConfiguration, state management)
+  - test_500_standard_core.py (CompositorConfiguration, state management)
   - test_510_standard_flavors.py (Standard flavor definitions, aliases)
   - test_520_standard_introducers.py (Introduction formatting logic)
   - test_530_standard_linearizers.py (Content-to-lines conversion)
-  - test_540_standard_textualizers.py (Complete textualization flow)
+  - test_540_standard_compositors.py (Complete composition flow)
   - test_550_standard_printers.py (Stderr and custom output)
 
 - **700-799**: Integration tests
@@ -256,11 +256,11 @@ AddressConfiguration tests (100-199)
   Test 110: AddressConfiguration with per-flavor overrides
   Test 120: AddressConfiguration inheritance from parent
   Test 130: AddressConfiguration with custom printer_factory
-  Test 140: AddressConfiguration with custom textualizer_factory
+  Test 140: AddressConfiguration with custom compositor_factory
   Test 150: AddressConfiguration immutability
 
 FlavorConfiguration tests (200-299)
-  Test 200: FlavorConfiguration with custom textualizer_factory
+  Test 200: FlavorConfiguration with custom compositor_factory
   Test 210: FlavorConfiguration override behavior
   Test 220: FlavorConfiguration immutability
 
@@ -296,7 +296,7 @@ Exception behavior tests (200-299)
   Test 210: Exception messages are properly formatted
   Test 220: Exception repr and str methods
 
-Test Module: test_200_textualizers.py
+Test Module: test_200_compositors.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Module under test**: ``sources/ictr/textualizers.py`` (60% coverage,
@@ -305,13 +305,13 @@ Test Module: test_200_textualizers.py
 **Uncovered lines**: Factory functions and protocol defaults
 
 Basic functionality tests (000-099)
-  Test 000: Textualizer protocol basic usage
+  Test 000: Compositor protocol basic usage
   Test 010: TextualizationControl basic functionality
 
 Factory function tests (100-199)
-  Test 100: produce_textualizer_factory_default with string introducer
-  Test 110: produce_textualizer_factory_default with callable introducer
-  Test 120: produce_textualizer_factory_default with configuration
+  Test 100: produce_compositor_factory_default with string introducer
+  Test 110: produce_compositor_factory_default with callable introducer
+  Test 120: produce_compositor_factory_default with configuration
 
 TextualizationControl tests (200-299)
   Test 200: TextualizationControl with printer providing columns_max
@@ -373,12 +373,12 @@ Reporter.__call__ tests (100-199)
   Test 130: Reporter inactive does not process message
   Test 140: Reporter packages arguments into MessageContent
   Test 150: Reporter creates Record with timestamp
-  Test 160: Reporter invokes textualizer
+  Test 160: Reporter invokes compositor
   Test 170: Reporter invokes printer
 
 Message flow tests (200-299)
   Test 200: End-to-end message flow through reporter
-  Test 210: Reporter with custom textualizer
+  Test 210: Reporter with custom compositor
   Test 220: Reporter with custom printer
   Test 230: Reporter captures output for assertion
 
@@ -458,7 +458,7 @@ Reporter creation and caching tests (600-699)
   Test 600: Reporter cache behavior for flavors
   Test 610: Reporter cache behavior for trace levels
   Test 620: Reporter configuration from address hierarchy
-  Test 630: Reporter textualizer from configuration
+  Test 630: Reporter compositor from configuration
   Test 640: Reporter printer from configuration
 
 Builtins installation tests (700-799)
@@ -483,7 +483,7 @@ Configuration hierarchy tests (900-999)
   Test 920: Module configuration inheritance
   Test 930: Subpackage configuration inheritance
   Test 940: Per-flavor configuration override
-  Test 950: Textualizer factory inheritance
+  Test 950: Compositor factory inheritance
   Test 960: Printer factory inheritance
 
 Test Module: test_500_standard_core.py
@@ -492,18 +492,18 @@ Test Module: test_500_standard_core.py
 **Module under test**: ``sources/ictr/standard/core.py`` (77% coverage,
 108, 112-120, 194-195, 291-297 uncovered)
 
-**Uncovered lines**: TextualizerConfiguration edge cases, state management
+**Uncovered lines**: CompositorConfiguration edge cases, state management
 
 Basic functionality tests (000-099)
-  Test 000: TextualizerConfiguration with defaults
-  Test 010: TextualizerState creation
+  Test 000: CompositorConfiguration with defaults
+  Test 010: CompositorState creation
 
-TextualizerConfiguration tests (100-199)
-  Test 100: TextualizerConfiguration with all fields specified
-  Test 110: TextualizerConfiguration with custom details_separator
-  Test 120: TextualizerConfiguration with custom prefixes
-  Test 130: TextualizerConfiguration with ExceptionsConfiguration
-  Test 140: TextualizerConfiguration immutability
+CompositorConfiguration tests (100-199)
+  Test 100: CompositorConfiguration with all fields specified
+  Test 110: CompositorConfiguration with custom details_separator
+  Test 120: CompositorConfiguration with custom prefixes
+  Test 130: CompositorConfiguration with ExceptionsConfiguration
+  Test 140: CompositorConfiguration immutability
 
 ExceptionsConfiguration tests (200-299)
   Test 200: ExceptionsConfiguration with enable_stacktraces
@@ -511,11 +511,11 @@ ExceptionsConfiguration tests (200-299)
   Test 220: ExceptionsConfiguration.discover() returns None when no exception
   Test 230: ExceptionsConfiguration.interpolate() formats exception message
 
-TextualizerState tests (300-399)
-  Test 300: TextualizerState.from_configuration with Rich available
-  Test 310: TextualizerState.from_configuration with Rich unavailable
-  Test 320: TextualizerState.from_configuration with columns_max
-  Test 330: TextualizerState.from_configuration without columns_max
+CompositorState tests (300-399)
+  Test 300: CompositorState.from_configuration with Rich available
+  Test 310: CompositorState.from_configuration with Rich unavailable
+  Test 320: CompositorState.from_configuration with columns_max
+  Test 330: CompositorState.from_configuration without columns_max
 
 Rich integration tests (400-499)
   Test 400: Rich console creation
@@ -660,26 +660,26 @@ Exception chaining tests (800-899)
   Test 820: Exception groups (TODO in code)
   Test 830: Nested exception chaining
 
-Test Module: test_540_standard_textualizers.py
+Test Module: test_540_standard_compositors.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Module under test**: ``sources/ictr/standard/textualizers.py`` (10% coverage,
+**Module under test**: ``sources/ictr/standard/compositors.py`` (10% coverage,
 major gaps)
 
 **Uncovered lines**: 50-70, 74-97, 103-107, 113-149, 155-167, 176-182
 
 Basic functionality tests (000-099)
-  Test 000: Textualizer with default configuration
-  Test 010: Textualizer.__call__ basic flow
+  Test 000: Compositor with default configuration
+  Test 010: Compositor.__call__ basic flow
 
-Textualizer.__call__ tests (100-199)
-  Test 100: Textualize MessageContent with summary only
-  Test 110: Textualize MessageContent with summary and details
-  Test 120: Textualize MessageContent with multiple details
-  Test 130: Textualize with string introducer
-  Test 140: Textualize with callable introducer
-  Test 150: Textualize with exception detail
-  Test 160: Textualize with ContentMisclassification for invalid content type
+Compositor.__call__ tests (100-199)
+  Test 100: Compose MessageContent with summary only
+  Test 110: Compose MessageContent with summary and details
+  Test 120: Compose MessageContent with multiple details
+  Test 130: Compose with string introducer
+  Test 140: Compose with callable introducer
+  Test 150: Compose with exception detail
+  Test 160: Compose with ContentMisclassification for invalid content type
 
 _render_summary tests (200-299)
   Test 200: Render summary with introduction prefix
@@ -757,7 +757,7 @@ End-to-end message flow tests
 
   Test 300: Message with multiple details
 
-  Test 400: Message flow through all layers (dispatcher, reporter, textualizer, printer)
+  Test 400: Message flow through all layers (dispatcher, reporter, compositor, printer)
 
 Test Module: test_710_integration_exceptions.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -779,7 +779,7 @@ Configuration hierarchy tests
   Test 200: Module configuration inherits from package
   Test 300: Subpackage configuration chain
   Test 400: Per-flavor overrides at each level
-  Test 500: Textualizer factory inheritance
+  Test 500: Compositor factory inheritance
   Test 600: Printer factory inheritance
   Test 700: Active flavors inheritance
 
@@ -809,7 +809,7 @@ Dependencies Requiring Injection
 
 **Rich library availability**:
   Test both Rich-available and Rich-unavailable scenarios by controlling import
-  path or using test-specific textualizer configurations
+  path or using test-specific compositor configurations
 
 **Stack frame inspection**:
   For testing discover_address, create controlled call stacks via test helper
@@ -921,10 +921,10 @@ Private Functions/Methods Not Testable via Public API
     testable via dispatcher creation
   - Internal registry initialization: Testable via dispatcher behavior
 
-**sources/ictr/standard/textualizers.py**:
+**sources/ictr/standard/compositors.py**:
 
-  - ``_render_detail()``: Private but exercised via Textualizer.__call__
-  - ``_render_summary()``: Private but exercised via Textualizer.__call__
+  - ``_render_detail()``: Private but exercised via Compositor.__call__
+  - ``_render_summary()``: Private but exercised via Compositor.__call__
   - ``_render_lines()``: Private but exercised via _render_detail and
     _render_summary
 
@@ -953,7 +953,7 @@ Specific Gaps to Close
 
 1. sources/ictr/dispatchers.py: 161 uncovered → 0 uncovered
 2. sources/ictr/standard/linearizers.py: 84 uncovered → 0 uncovered
-3. sources/ictr/standard/textualizers.py: 81 uncovered → 0 uncovered
+3. sources/ictr/standard/compositors.py: 81 uncovered → 0 uncovered
 4. sources/ictr/standard/introducers.py: 56 uncovered → 0 uncovered
 
 **Medium Priority**:

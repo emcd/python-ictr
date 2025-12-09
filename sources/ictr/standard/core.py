@@ -262,8 +262,8 @@ class LinearizerState( __.immut.DataclassObject ):
             columns_max = columns_max )
 
 
-class TextualizerConfiguration( __.immut.DataclassObject ):
-    ''' Behaviors and format for text from standard textualizer. '''
+class CompositorConfiguration( __.immut.DataclassObject ):
+    ''' Behaviors and format for text from standard compositor. '''
 
     detail_prefix_initial: __.typx.Annotated[
         str, __.ddoc.Doc( ''' Initial prefix for message detail. ''' )
@@ -309,16 +309,16 @@ class TextualizerConfiguration( __.immut.DataclassObject ):
     ] = 0.3
 
 
-class TextualizerState( __.immut.DataclassObject ):
+class CompositorState( __.immut.DataclassObject ):
     ''' Data transfer object for textualizer state. '''
 
-    configuration: TextualizerConfiguration
+    configuration: CompositorConfiguration
     linearizer: LinearizerState
 
     @classmethod
     def from_configuration(
         cls,
-        configuration: TextualizerConfiguration,
+        configuration: CompositorConfiguration,
         control: __.TextualizationControl,
     ) -> __.typx.Self:
         linearizer = LinearizerState.from_configuration(
@@ -326,5 +326,5 @@ class TextualizerState( __.immut.DataclassObject ):
         return cls( configuration = configuration, linearizer = linearizer )
 
 
+COMPOSITOR_CONFIGURATION_DEFAULT = CompositorConfiguration( )
 INTRODUCER_CONFIGURATION_DEFAULT = IntroducerConfiguration( )
-TEXTUALIZER_CONFIGURATION_DEFAULT = TextualizerConfiguration( )

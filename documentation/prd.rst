@@ -99,7 +99,7 @@ Secondary Objectives
 * **Rich formatting integration**: Seamlessly integrate with Rich library for
   colorized, styled output when available.
 
-* **Extensibility**: Provide clear extension points for custom textualizers,
+* **Extensibility**: Provide clear extension points for custom compositors,
   introducers, and output targets.
 
 * **Type safety**: Full type hint coverage for IDE autocomplete and static

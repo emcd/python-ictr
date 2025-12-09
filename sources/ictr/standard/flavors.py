@@ -22,50 +22,50 @@
 
 
 from . import __
+from . import compositors as _compositors
 from . import core as _core
 from . import introducers as _intros
-from . import textualizers as _texts
 
 
 def produce_flavors(
     introducercfg: _core.IntroducerConfiguration = (
         _core.INTRODUCER_CONFIGURATION_DEFAULT ),
-    textualizercfg: _core.TextualizerConfiguration = (
-        _core.TEXTUALIZER_CONFIGURATION_DEFAULT ),
+    compositorcfg: _core.CompositorConfiguration = (
+        _core.COMPOSITOR_CONFIGURATION_DEFAULT ),
 ) -> __.FlavorsRegistry:
     ''' Produces registry of all standard flavors.
 
-        Customization of introducers and textualizers is possible.
+        Customization of introducers and compositors is possible.
     '''
     flavors: __.FlavorsRegistryLiberal = { }
     introducer = _intros.Introducer( configuration = introducercfg )
-    textualizer = _texts.Textualizer(
-        configuration = textualizercfg, introducer = introducer )
+    compositor = _compositors.Compositor(
+        configuration = compositorcfg, introducer = introducer )
     for name, spec in __.flavor_specifications_standard.items( ):
-        tcfg = textualizercfg
+        tcfg = compositorcfg
         if spec.stack:
-            tcfg = __.dcls.replace( textualizercfg, include_exception = True )
-        textualizer = _texts.Textualizer(
+            tcfg = __.dcls.replace( compositorcfg, include_exception = True )
+        compositor = _compositors.Compositor(
             configuration = tcfg, introducer = introducer )
         flavors[ name ] = __.FlavorConfiguration(
-            textualizer_factory = _produce_textualizer_factory( textualizer ) )
+            compositor_factory = _produce_compositor_factory( compositor ) )
     for alias, name in __.flavor_aliases_standard.items( ):
         flavors[ alias ] = flavors[ name ]
     for level in range( 10 ):
         indent_i = '  ' * level
         indent_s = '  ' * ( level + 1 )
         tcfg = __.dcls.replace(
-            textualizercfg,
+            compositorcfg,
             line_prefix_initial = indent_i,
             line_prefix_subsequent = indent_s )
-        textualizer = _texts.Textualizer(
+        compositor = _compositors.Compositor(
             configuration = tcfg, introducer = introducer )
         flavors[ level ] = __.FlavorConfiguration(
-            textualizer_factory = _produce_textualizer_factory( textualizer ) )
+            compositor_factory = _produce_compositor_factory( compositor ) )
     return __.immut.Dictionary( flavors )
 
 
-def _produce_textualizer_factory(
-    textualizer: _texts.Textualizer
-) -> __.TextualizerFactory:
-    return lambda control, address, flavor: textualizer
+def _produce_compositor_factory(
+    compositor: _compositors.Compositor
+) -> __.CompositorFactory:
+    return lambda control, address, flavor: compositor

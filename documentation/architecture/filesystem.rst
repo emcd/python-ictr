@@ -70,7 +70,7 @@ The main Python package follows the standard ``sources/`` directory pattern:
         ├── configuration.py         # Configuration dataclasses
         ├── dispatchers.py           # Dispatcher entry points
         ├── reporters.py             # Reporter coordination
-        ├── textualizers.py          # Textualizer protocols
+        ├── textualizers.py          # Compositor and linearizer protocols
         ├── printers.py              # Printer protocols
         ├── flavors.py               # Flavor specifications
         ├── records.py               # Message records
@@ -82,7 +82,7 @@ The main Python package follows the standard ``sources/`` directory pattern:
         │   ├── flavors.py           # Standard flavor definitions
         │   ├── introducers.py       # Introduction formatters
         │   ├── linearizers.py       # Content-to-lines converters
-        │   ├── textualizers.py      # Standard textualizer implementations
+        │   ├── compositors.py       # Standard compositor implementations
         │   └── printers.py          # Standard printer implementations
         └── _typedecls/              # Vendored type declarations
             └── wcwidth/             # Terminal width calculation types

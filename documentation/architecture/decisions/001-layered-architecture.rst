@@ -36,15 +36,15 @@ Implement a four-layer architecture with protocol-based boundaries:
 activation control. Provides attribute-based access (``ctrl.note(...)``) and
 caches reporter instances per address + flavor combination.
 
-**Layer 2 - Reporter**: Coordination layer binding textualizer to printer for
+**Layer 2 - Reporter**: Coordination layer binding compositor to printer for
 specific address + flavor. Handles active/inactive state and packages user
 content into structured records.
 
-**Layer 3 - Textualizer**: Transforms records into formatted text lines using
+**Layer 3 - Compositor**: Transforms records into formatted text lines using
 composed subsystems (introducer for prefixes, linearizers for content).
 Receives column constraints from printer layer.
 
-**Layer 4 - Printer**: Abstracts output targets. Provides textualizer control
+**Layer 4 - Printer**: Abstracts output targets. Provides textualization control
 information (columns, colorization capability) and writes formatted output.
 
 Layers communicate through protocols (structural typing) rather than
@@ -90,7 +90,7 @@ Consequences
   implementations of dependencies.
 * **Configuration flexibility**: Factory pattern enables per-address,
   per-flavor customization at each layer.
-* **Optional dependencies**: Rich integration isolated in textualizer layer
+* **Optional dependencies**: Rich integration isolated in compositor layer
   with graceful fallback.
 * **Clear extension points**: Protocols document exactly what custom
   implementations must provide.

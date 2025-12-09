@@ -73,7 +73,7 @@ Test modules follow architectural layering with systematic numbering:
   - test_130_exceptions.py - Package exception hierarchy
 
 **200-299: Protocols and Interfaces**
-  - test_200_textualizers.py - Textualizer protocol and factories
+  - test_200_compositors.py - Compositor protocol and factories
   - test_210_printers.py - Printer protocol and factories
 
 **300-399: Core Layer Implementations**
@@ -84,11 +84,11 @@ Test modules follow architectural layering with systematic numbering:
   - test_400_dispatchers.py - Dispatcher routing, registration, builtins
 
 **500-699: Standard Recipe Implementations**
-  - test_500_standard_core.py - TextualizerConfiguration and state
+  - test_500_standard_core.py - CompositorConfiguration and state
   - test_510_standard_flavors.py - Standard flavor definitions
   - test_520_standard_introducers.py - Introduction formatting logic
   - test_530_standard_linearizers.py - Content-to-lines conversion
-  - test_540_standard_textualizers.py - Complete textualization flow
+  - test_540_standard_compositors.py - Complete composition flow
   - test_550_standard_printers.py - Stderr and custom output
 
 **700-799: Integration Tests**

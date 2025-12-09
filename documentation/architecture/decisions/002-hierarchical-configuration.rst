@@ -38,7 +38,7 @@ Implement hierarchical configuration following Python package structure:
 
 **Address-Based Registry**: Configuration keyed by module/package address
 (``"myapp"``, ``"myapp.subsystem"``, ``"library"``). Each address specifies
-active flavors, max trace level, printer factory, and textualizer factory.
+active flavors, max trace level, printer factory, and compositor factory.
 
 **Hierarchical Inheritance**: When resolving configuration for
 ``"myapp.subsystem.module"``, search in order:
@@ -56,7 +56,7 @@ address registrations. Libraries register during import. Applications can
 update active flavors but cannot delete library registrations.
 
 **Per-Flavor Overrides**: Each address can specify per-flavor configuration
-(custom textualizer, context inclusion). Enables "all errors use logging but
+(custom compositor, context inclusion). Enables "all errors use logging but
 notes use stderr" scenarios.
 
 Alternatives

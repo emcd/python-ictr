@@ -42,7 +42,7 @@ class Printer( __.Printer ):
             text = __.remove_ansi_c1_sequences( text )
         print( text, file = self.target )
 
-    def provide_textualizer_control(
+    def provide_textualization_control(
         self
     ) -> __.typx.Optional[ __.TextualizationControl ]:
         tty = self.target.isatty( )

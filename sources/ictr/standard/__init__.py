@@ -21,9 +21,9 @@
 ''' Standard flavors, printers, and textualizers. '''
 
 
+from .compositors import *
 from .core import *
 from .flavors import *
 from .introducers import *
 from .linearizers import *
 from .printers import *
-from .textualizers import *

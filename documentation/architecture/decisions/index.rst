@@ -30,7 +30,7 @@ Active Decisions
 
 001. :doc:`Layered Architecture with Protocol-Based Boundaries <001-layered-architecture>`
 
-    Separates concerns across dispatcher, reporter, textualizer, and printer
+    Separates concerns across dispatcher, reporter, compositor, and printer
     layers with protocol-based interfaces.
 
 002. :doc:`Hierarchical Configuration Following Package Structure <002-hierarchical-configuration>`

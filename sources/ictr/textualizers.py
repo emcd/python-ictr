@@ -27,6 +27,23 @@ from . import printers as _printers
 from . import records as _records
 
 
+class Compositor( __.immut.DataclassProtocol, __.typx.Protocol ):
+    ''' Abstract base class for compositors. '''
+
+    @__.abc.abstractmethod
+    def __call__(
+        self, control: _printers.TextualizationControl, record: _records.Record
+    ) -> str:
+        ''' Renders record as text. '''
+        raise NotImplementedError
+
+
+CompositorFactory: __.typx.TypeAlias = (
+    __.typx.Callable[
+        [ _printers.TextualizationControl, str, _flavors.Flavor ],
+        Compositor ] )
+
+
 class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
     ''' Abstract base class for introducers. '''
 
@@ -58,51 +75,34 @@ class Linearizer( __.immut.DataclassProtocol, __.typx.Protocol ):
         raise NotImplementedError
 
 
-class Textualizer( __.immut.DataclassProtocol, __.typx.Protocol ):
-    ''' Abstract base class for textualizers. '''
-
-    @__.abc.abstractmethod
-    def __call__(
-        self, control: _printers.TextualizationControl, record: _records.Record
-    ) -> str:
-        ''' Renders record as text. '''
-        raise NotImplementedError
-
-
-TextualizerFactory: __.typx.TypeAlias = (
-    __.typx.Callable[
-        [ _printers.TextualizationControl, str, _flavors.Flavor ],
-        Textualizer ] )
-
-
-def produce_textualizer_factory_default(
+def produce_compositor_factory_default(
     introducer: __.Absential[ IntroducerUnion ] = __.absent,
     line_prefix_initial: str = '',
     line_prefix_subsequent: str = '  ',
     trace_exceptions: bool = False,
-) -> TextualizerFactory:
-    ''' Produces default textualizer factory. '''
-    def produce_textualizer(
+) -> CompositorFactory:
+    ''' Produces default compositor factory. '''
+    def produce_compositor(
         control: _printers.TextualizationControl,
         addresss: str,
         flavor: _flavors.Flavor,
-    ) -> Textualizer:
+    ) -> Compositor:
         from .standard import (
+            Compositor,
+            CompositorConfiguration,
             ExceptionsConfiguration,
             LinearizerConfiguration,
-            Textualizer,
-            TextualizerConfiguration,
         )
         ecfg = ExceptionsConfiguration(
             enable_discovery = trace_exceptions,
             enable_stacktraces = trace_exceptions )
         lcfg = LinearizerConfiguration( exceptionscfg = ecfg )
-        tcfg = TextualizerConfiguration(
+        ccfg = CompositorConfiguration(
             line_prefix_initial = line_prefix_initial,
             line_prefix_subsequent = line_prefix_subsequent,
             linearizercfg = lcfg )
         if __.is_absent( introducer ):
-            return Textualizer( configuration = tcfg )
-        return Textualizer( configuration = tcfg, introducer = introducer )
+            return Compositor( configuration = ccfg )
+        return Compositor( configuration = ccfg, introducer = introducer )
 
-    return produce_textualizer
+    return produce_compositor

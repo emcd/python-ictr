@@ -48,9 +48,9 @@ The system is organized into three primary layers::
            │ uses                                      uses  │
            ↓                                                 ↓
     ┌──────────────────────────┐   ┌──────────────────────────┐
-    │   Textualizer Layer      │   │    Printer Layer         │
+    │   Compositor Layer       │   │    Printer Layer         │
     │  ┌─────────────┐         │   │  ┌────────┐             │
-    │  │ Textualizer │ Formats │   │  │Printer │ Outputs     │
+    │  │ Compositor  │ Formats │   │  │Printer │ Outputs     │
     │  │  + Introducer content │   │  └────────┘ to targets  │
     │  │  + Linearizers        │   │                          │
     │  └─────────────┘         │   │                          │
@@ -61,16 +61,16 @@ appropriate reporters based on module address and flavor. Manages activation
 control (which flavors/trace levels are active per module).
 
 **Reporter Layer**: Bridges dispatcher and output. Each reporter instance
-binds a specific address + flavor combination to a textualizer and printer.
+binds a specific address + flavor combination to a compositor and printer.
 Active/inactive state controls whether messages are processed.
 
-**Textualizer Layer**: Transforms structured records into formatted text
+**Compositor Layer**: Transforms structured records into formatted text
 lines. Composed of introducer (prefix generation), linearizers (content to
 lines), and layout logic. Supports both plain and Rich rendering.
 
 **Printer Layer**: Abstracts output targets. Default prints to stderr, but
 custom printers can route to files, logging, or other destinations. Provides
-column constraints to textualizers for proper line wrapping.
+column constraints to compositors for proper line wrapping.
 
 Data Flow
 ===============================================================================
@@ -89,7 +89,7 @@ Typical message flow through the system::
        │
        │ packages MessageContent → Record
        ↓
-    Textualizer( control, record )
+    Compositor( control, record )
        │
        │ 1. Introducer generates prefix lines
        │ 2. Linearizers convert content to text lines
@@ -115,7 +115,7 @@ Each level can specify:
 * **Active flavors**: Which message categories produce output
 * **Max trace level**: Deepest trace level to render
 * **Printer factory**: How to create output targets
-* **Textualizer factory**: How to format messages
+* **Compositor factory**: How to format messages
 * **Per-flavor overrides**: Flavor-specific configuration
 
 Libraries register configurations without affecting application or other
@@ -146,8 +146,8 @@ Extension Points
 
 The architecture provides multiple extension points:
 
-**Custom Textualizers**: Implement ``Textualizer`` protocol to control
-formatting logic. Factory pattern allows different textualizers per address or
+**Custom Compositors**: Implement ``Compositor`` protocol to control
+formatting logic. Factory pattern allows different compositors per address or
 flavor.
 
 **Custom Printers**: Implement ``Printer`` protocol to route output to custom
@@ -169,7 +169,7 @@ The system is designed for concurrent use:
 
 * Dispatcher registration uses mutex-protected initialization
 * Reporters are immutable once created
-* Textualizers and printers are stateless protocols
+* Compositors and printers are stateless protocols
 * Configuration objects are immutable dataclasses
 
 No global mutable state exists after initialization, enabling safe concurrent

@@ -29,13 +29,13 @@ from . import textualizers as _texts
 class FlavorConfiguration( __.immut.DataclassObject ):
     ''' Per-flavor configuration. '''
 
-    textualizer_factory: __.typx.Annotated[
-        __.typx.Optional[ _texts.TextualizerFactory ],
+    compositor_factory: __.typx.Annotated[
+        __.typx.Optional[ _texts.CompositorFactory ],
         __.typx.Doc(
-            ''' Factory which produces textualizer callable.
+            ''' Factory which produces compositor callable.
 
-                Takes textualizer control, address, and flavor as arguments.
-                Returns textualizer.
+                Takes textualization control, address, and flavor as arguments.
+                Returns compositor.
 
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
@@ -60,43 +60,43 @@ def produce_flavors_default( ) -> FlavorsRegistry:
     ''' Produces registry of all standard flavors without customization. '''
     flavors: FlavorsRegistryLiberal = { }
     for name, spec in _flavors.flavor_specifications_standard.items( ):
-        tfactory = _texts.produce_textualizer_factory_default(
+        tfactory = _texts.produce_compositor_factory_default(
             introducer = f"{spec.label}| ", trace_exceptions = spec.stack )
         flavors[ name ] = FlavorConfiguration(
-            textualizer_factory = tfactory )
+            compositor_factory = tfactory )
     for alias, name in _flavors.flavor_aliases_standard.items( ):
         flavors[ alias ] = flavors[ name ]
     for level in range( 10 ):
         indent_i = '  ' * level
         indent_s = '  ' * ( level + 1 )
-        tfactory = _texts.produce_textualizer_factory_default(
+        tfactory = _texts.produce_compositor_factory_default(
             introducer = f"TRACE{level}| ",
             line_prefix_initial = indent_i,
             line_prefix_subsequent = indent_s )
         flavors[ level ] = FlavorConfiguration(
-            textualizer_factory = tfactory )
+            compositor_factory = tfactory )
     return __.immut.Dictionary( flavors )
 
 
 class AddressConfiguration( __.immut.DataclassObject ):
     ''' Per-address configuration. '''
 
+    compositor_factory: __.typx.Annotated[
+        __.typx.Optional[ _texts.CompositorFactory ],
+        __.typx.Doc(
+            ''' Factory which produces compositor callable.
+
+                Takes textualization control, address, and flavor as arguments.
+                Returns compositor.
+
+                Default ``None`` inherits from cumulative configuration.
+            ''' ),
+    ] = None
     flavors: __.typx.Annotated[
         FlavorsRegistry,
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
     ] = __.dcls.field( default_factory = FlavorsRegistry )
-    textualizer_factory: __.typx.Annotated[
-        __.typx.Optional[ _texts.TextualizerFactory ],
-        __.typx.Doc(
-            ''' Factory which produces textualizer callable.
-
-                Takes textualizer control, address, and flavor as arguments.
-                Returns textualizer.
-
-                Default ``None`` inherits from cumulative configuration.
-            ''' ),
-    ] = None
     include_context: __.typx.Annotated[
         __.typx.Optional[ bool ],
         __.typx.Doc(
@@ -110,20 +110,20 @@ class AddressConfiguration( __.immut.DataclassObject ):
 class DispatcherConfiguration( __.immut.DataclassObject ):
     ''' Per-dispatcher configuration. '''
 
+    compositor_factory: __.typx.Annotated[
+        _texts.CompositorFactory,
+        __.typx.Doc(
+            ''' Factory which produces compositor callable.
+
+                Takes textualization control, address, and flavor as arguments.
+                Returns compositor.
+            ''' ),
+    ] = _texts.produce_compositor_factory_default( )
     flavors: __.typx.Annotated[
         FlavorsRegistry,
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
     ] = __.dcls.field( default_factory = produce_flavors_default )
-    textualizer_factory: __.typx.Annotated[
-        _texts.TextualizerFactory,
-        __.typx.Doc(
-            ''' Factory which produces textualizer callable.
-
-                Takes textualizer control, address, and flavor as arguments.
-                Returns textualizer.
-            ''' ),
-    ] = _texts.produce_textualizer_factory_default( )
     include_context: __.typx.Annotated[
         bool, __.typx.Doc( ''' Include stack frame with output? ''' )
     ] = False
