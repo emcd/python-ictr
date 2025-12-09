@@ -68,4 +68,4 @@ def produce_flavors(
 def _produce_compositor_factory(
     compositor: _compositors.Compositor
 ) -> __.CompositorFactory:
-    return lambda control, address, flavor: compositor
+    return lambda address, flavor: compositor

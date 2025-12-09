@@ -29,14 +29,13 @@ from . import textualizers as _texts
 
 
 class Reporter( __.immut.DataclassObject ):
-    # TODO? Multiplex across array of printers.
     ''' Formats and prints messages to targets. '''
 
     active: bool  # TODO? Also accept predicate function to decide if active.
     address: str
     flavor: _flavors.Flavor
     compositor: _texts.Compositor
-    printer: _printers.Printer
+    printers: _printers.Printers
 
     def __call__(
         self,
@@ -50,9 +49,10 @@ class Reporter( __.immut.DataclassObject ):
             summary = summary, details = details )
         record = _records.Record(
             address = self.address, content = content, flavor = self.flavor )
-        tcontrol = self.printer.provide_textualization_control( )
-        if tcontrol is None: self.printer( record )
-        else: self.printer( self.compositor( tcontrol, record ) )
+        for printer in self.printers:
+            tcontrol = printer.provide_textualization_control( )
+            if tcontrol is None: printer( record )
+            else: printer( self.compositor( tcontrol, record ) )
 
     # TODO: inscribe (same as __call__)
     # TODO: inscribe_async

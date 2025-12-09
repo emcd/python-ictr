@@ -381,14 +381,21 @@ Reporter.__call__ tests (100-199)
   Test 130: Reporter inactive does not process message
   Test 140: Reporter packages arguments into MessageContent
   Test 150: Reporter creates Record with timestamp
-  Test 160: Reporter invokes compositor
-  Test 170: Reporter invokes printer
+  Test 160: Reporter invokes compositor for each printer
+  Test 170: Reporter invokes each printer in sequence
 
-Message flow tests (200-299)
-  Test 200: End-to-end message flow through reporter
-  Test 210: Reporter with custom compositor
-  Test 220: Reporter with custom printer
-  Test 230: Reporter captures output for assertion
+Multiple printers tests (200-299)
+  Test 200: Reporter with single printer
+  Test 210: Reporter with multiple printers
+  Test 220: Each printer receives appropriately rendered output
+  Test 230: Printer without TextualizationControl receives Record
+  Test 240: Printer with TextualizationControl receives rendered string
+
+Message flow tests (300-399)
+  Test 300: End-to-end message flow through reporter
+  Test 310: Reporter with custom compositor
+  Test 320: Reporter with custom printers
+  Test 330: Reporter captures output for assertion
 
 Test Module: test_310_inspection.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -467,7 +474,8 @@ Reporter creation and caching tests (600-699)
   Test 610: Reporter cache behavior for trace levels
   Test 620: Reporter configuration from address hierarchy
   Test 630: Reporter compositor from configuration
-  Test 640: Reporter printer from configuration
+  Test 640: Reporter printers from printer_factories
+  Test 650: Multiple printer factories produce multiple printers
 
 Builtins installation tests (700-799)
   Test 700: install_builtin with default name
@@ -765,7 +773,16 @@ End-to-end message flow tests
 
   Test 300: Message with multiple details
 
-  Test 400: Message flow through all layers (dispatcher, reporter, compositor, printer)
+  Test 400: Message flow through all layers (dispatcher, reporter, compositor, printers)
+
+Multiple printers integration tests
+  Test 500: Message output to multiple printers simultaneously
+
+  Test 510: Different TextualizationControl per printer (colorized vs plain)
+
+  Test 520: Mixed printer types (stream-based and custom factory)
+
+  Test 530: Printer receiving Record vs rendered string based on control
 
 Test Module: test_710_integration_exceptions.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -788,7 +805,7 @@ Configuration hierarchy tests
   Test 300: Subpackage configuration chain
   Test 400: Per-flavor overrides at each level
   Test 500: Compositor factory inheritance
-  Test 600: Printer factory inheritance
+  Test 600: Printer factories inheritance
   Test 700: Active flavors inheritance
 
 Test Module: test_730_integration_concurrency.py

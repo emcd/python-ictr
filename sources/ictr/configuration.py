@@ -34,8 +34,7 @@ class FlavorConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Factory which produces compositor callable.
 
-                Takes textualization control, address, and flavor as arguments.
-                Returns compositor.
+                Takes address and flavor as arguments. Returns compositor.
 
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
@@ -86,8 +85,7 @@ class AddressConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Factory which produces compositor callable.
 
-                Takes textualization control, address, and flavor as arguments.
-                Returns compositor.
+                Takes address and flavor as arguments. Returns compositor.
 
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
@@ -115,8 +113,7 @@ class DispatcherConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Factory which produces compositor callable.
 
-                Takes textualization control, address, and flavor as arguments.
-                Returns compositor.
+                Takes address and flavor as arguments. Returns compositor.
             ''' ),
     ] = _texts.produce_compositor_factory_default( )
     flavors: __.typx.Annotated[

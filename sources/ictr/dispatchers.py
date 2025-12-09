@@ -143,22 +143,24 @@ class Dispatcher( __.immut.DataclassObject ):
                 Default is suitable for application use.
             ''' ),
     ] = __.dcls.field( default_factory = _cfg.DispatcherConfiguration )
-    printer_factory: __.typx.Annotated[
-        _printers.PrinterFactoryUnion,
+    printer_factories: __.typx.Annotated[
+        _printers.PrinterFactoriesUnion,
         __.typx.Doc(
-            ''' Factory which produces callables to output text somewhere.
+            ''' Factories which produce callables to output text somewhere.
 
-                May also be writable text stream.
-                Factories take two arguments, address and flavor, and
-                return a callable which takes one argument, a record
+                A factory takes two arguments, address and flavor, and
+                returns a callable which takes one argument, either a record
                 or the string produced by a textualizer.
+
+                May also be writable text stream instead of a factory.
             ''' ),
-    ] = _printers.produce_printer_factory_default( __.sys.stderr )
+    ] = ( _printers.produce_printer_factory_default( __.sys.stderr ), )
     reporters: __.typx.Annotated[
         ReportersRegistry,
         __.typx.Doc(
             ''' Cache of reporter instances by address and flavor. ''' ),
     ] = __.dcls.field( default_factory = ReportersRegistry )
+    # TODO? Move reporters mutex into reporters registry.
     reporters_mutex: __.typx.Annotated[
         __.threads.Lock,
         __.typx.Doc( ''' Access lock for cache of reporter instances. ''' ),
@@ -189,7 +191,6 @@ class Dispatcher( __.immut.DataclassObject ):
             with self.reporters_mutex:
                 return self.reporters[ cache_index ]
         configuration = _produce_ic_configuration( self, address, flavor )
-        control = _printers.TextualizationControl( )
         if isinstance( flavor, int ):
             trace_level = (
                 _calculate_effective_trace_level( self.trace_levels, address) )
@@ -200,12 +201,11 @@ class Dispatcher( __.immut.DataclassObject ):
             active = (
                 isinstance( active_flavors, Omniflavor )
                 or flavor in active_flavors )
-        compositor = configuration[ 'compositor_factory' ](
-            control, address, flavor )
-        printer = _resolve_printer( self, address, flavor )
+        compositor = configuration[ 'compositor_factory' ]( address, flavor )
+        printers = _resolve_printers( self.printer_factories, address, flavor )
         reporter = _reporters.Reporter(
             active = active, address = address, flavor = flavor,
-            compositor = compositor, printer = printer )
+            compositor = compositor, printers = printers )
         with self.reporters_mutex:
             self.reporters[ cache_index ] = reporter
         return reporter
@@ -285,7 +285,7 @@ CompositorFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
     __.typx.Doc(
         ''' Factory which produces compositor callable.
 
-            Takes textualization control, address, and flavor as arguments.
+            Takes address and flavor as arguments.
             Returns compositor to convert record content to a string.
         ''' ),
 ]
@@ -350,15 +350,16 @@ IntroducerArgument: __.typx.TypeAlias = __.typx.Annotated[
             arguments. Returns introduction string.
         ''' ),
 ]
-PrinterFactoryArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ _printers.PrinterFactoryUnion ],
+PrinterFactoriesArgument: __.typx.TypeAlias = __.typx.Annotated[
+    __.Absential[ _printers.PrinterFactoriesUnion ],
     __.typx.Doc(
-        ''' Factory which produces callables to output text somewhere.
+        ''' Factories which produce callables to output text somewhere.
 
-            May also be writable text stream.
-            Factories take two arguments, address and flavor, and
-            return a callable which takes one argument, a record or
+            A factory take two arguments, address and flavor, and
+            returns a callable which takes one argument, either a record or
             the string produced by a textualizer.
+
+            May also be writable text stream instead of a factory.
 
             If absent, uses a default.
         ''' ),
@@ -425,7 +426,7 @@ def install( # noqa: PLR0913
     alias: InstallAliasArgument = builtins_alias_default,
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
-    printer_factory: PrinterFactoryArgument = __.absent,
+    printer_factories: PrinterFactoriesArgument = __.absent,
     trace_levels: TraceLevelsArgument = __.absent,
     evname_active_flavors: EvnActiveFlavorsArgument = __.absent,
     evname_trace_levels: EvnTraceLevelsArgument = __.absent,
@@ -440,7 +441,7 @@ def install( # noqa: PLR0913
     dispatcher = produce_dispatcher(
         active_flavors = active_flavors,
         generalcfg = generalcfg,
-        printer_factory = printer_factory,
+        printer_factories = printer_factories,
         trace_levels = trace_levels,
         evname_active_flavors = evname_active_flavors,
         evname_trace_levels = evname_trace_levels )
@@ -452,7 +453,7 @@ def produce_dispatcher( # noqa: PLR0913
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
     modulecfgs: AddresscfgsArgument = __.absent,
-    printer_factory: PrinterFactoryArgument = __.absent,
+    printer_factories: PrinterFactoriesArgument = __.absent,
     trace_levels: TraceLevelsArgument = __.absent,
     evname_active_flavors: EvnActiveFlavorsArgument = __.absent,
     evname_trace_levels: EvnTraceLevelsArgument = __.absent,
@@ -467,8 +468,8 @@ def produce_dispatcher( # noqa: PLR0913
         initargs[ 'modulecfgs' ] = AddressesConfigurationsRegistry(
             {   address: configuration for address, configuration
                 in modulecfgs.items( ) } )
-    if not __.is_absent( printer_factory ):
-        initargs[ 'printer_factory' ] = printer_factory
+    if not __.is_absent( printer_factories ):
+        initargs[ 'printer_factories' ] = printer_factories
     _add_dispatcher_initarg_active_flavors(
         initargs, active_flavors, evname_active_flavors )
     _add_dispatcher_initarg_trace_levels(
@@ -651,9 +652,21 @@ def _produce_ic_configuration(
 
 
 def _resolve_printer(
-    dispatcher: Dispatcher, address: str, flavor: _flavors.Flavor
+    factory: _printers.PrinterFactoryUnion,
+    address: str,
+    flavor: _flavors.Flavor,
 ) -> _printers.Printer:
     from .standard import Printer
-    if isinstance( dispatcher.printer_factory, __.io.TextIOBase ):
-        return Printer( target = dispatcher.printer_factory )
-    return dispatcher.printer_factory( address, flavor )
+    if isinstance( factory, __.io.TextIOBase ):
+        return Printer( target = factory )
+    return factory( address, flavor )
+
+
+def _resolve_printers(
+    factories: _printers.PrinterFactoriesUnion,
+    address: str,
+    flavor: _flavors.Flavor,
+) -> _printers.Printers:
+    return tuple(
+        _resolve_printer( factory, address, flavor )
+        for factory in factories )

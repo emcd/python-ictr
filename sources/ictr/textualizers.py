@@ -32,16 +32,16 @@ class Compositor( __.immut.DataclassProtocol, __.typx.Protocol ):
 
     @__.abc.abstractmethod
     def __call__(
-        self, control: _printers.TextualizationControl, record: _records.Record
+        self,
+        control: _printers.TextualizationControl,
+        record: _records.Record,
     ) -> str:
         ''' Renders record as text. '''
         raise NotImplementedError
 
 
 CompositorFactory: __.typx.TypeAlias = (
-    __.typx.Callable[
-        [ _printers.TextualizationControl, str, _flavors.Flavor ],
-        Compositor ] )
+    __.typx.Callable[ [ str, _flavors.Flavor ], Compositor ] )
 
 
 class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
@@ -83,9 +83,7 @@ def produce_compositor_factory_default(
 ) -> CompositorFactory:
     ''' Produces default compositor factory. '''
     def produce_compositor(
-        control: _printers.TextualizationControl,
-        addresss: str,
-        flavor: _flavors.Flavor,
+        address: str, flavor: _flavors.Flavor
     ) -> Compositor:
         from .standard import (
             Compositor,

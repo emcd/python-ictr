@@ -76,7 +76,10 @@ class TextualizationControl( __.immut.DataclassObject ):
         return calculator( ) if callable( calculator ) else calculator
 
 
-class Printer( __.immut.DataclassProtocol, __.typx.Protocol ):
+class Printer(
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    decorators = ( __.typx.runtime_checkable, ),
+):
     ''' Abstract base class for printers. '''
 
     @__.abc.abstractmethod
@@ -95,9 +98,12 @@ class Printer( __.immut.DataclassProtocol, __.typx.Protocol ):
     # TODO: print_async
 
 
+Printers: __.typx.TypeAlias = __.cabc.Sequence[ Printer ]
 PrinterFactory: __.typx.TypeAlias = (
     __.cabc.Callable[ [ str, _flavors.Flavor ], Printer ] )
 PrinterFactoryUnion: __.typx.TypeAlias = __.io.TextIOBase | PrinterFactory
+PrinterFactoriesUnion: __.typx.TypeAlias = (
+    __.cabc.Sequence[ PrinterFactoryUnion ] )
 
 
 @_validate_arguments

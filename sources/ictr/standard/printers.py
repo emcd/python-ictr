@@ -38,20 +38,22 @@ class Printer( __.Printer ):
 
     def __call__( self, record: str | __.Record ) -> None:
         text = record if isinstance( record, str ) else str( record )
-        if not self.force_color and not self.target.isatty( ):
+        if not self._determine_colorization( ):
             text = __.remove_ansi_c1_sequences( text )
         print( text, file = self.target )
 
     def provide_textualization_control(
         self
     ) -> __.typx.Optional[ __.TextualizationControl ]:
-        tty = self.target.isatty( )
-        colorize = tty
-        if __.os.environ.get( 'NO_COLOR' ): colorize = False
-        colorize = colorize or self.force_color
+        colorize = self._determine_colorization( )
         columns_max_calculator = (
             __.produce_columns_max_calculator( self.target ) )
         # TODO: Get encoding from target.
         return __.TextualizationControl(
             colorize = colorize,
             columns_max_calculator = columns_max_calculator )
+
+    def _determine_colorization( self ) -> bool:
+        colorize = self.target.isatty( )
+        if __.os.environ.get( 'NO_COLOR' ): colorize = False
+        return colorize or self.force_color
