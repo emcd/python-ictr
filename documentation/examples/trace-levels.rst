@@ -31,39 +31,28 @@ where higher numbers indicate deeper or more verbose tracing.
 
 .. testsetup:: levels
 
+    import sys
     import ictr
-    from io import StringIO
-    from unittest.mock import patch
-    capture = StringIO( )
-
-    class MockPrinter:
-        def __init__( self, address, flavor ):
-            self.flavor = flavor
-        def __call__( self, record ):
-            print( f"[{self.flavor}] {record.content.summary}", file = capture )
-        def provide_textualization_control( self ):
-            return None
-
-    def capture_factory( address, flavor ):
-        return MockPrinter( address, flavor )
-
     # Enable all trace levels for this test
     ictr = ictr.install(
-        printer_factories = [ capture_factory ],
+        printer_factories = [ sys.stdout ],
         trace_levels = { None: 9 }  # Enable up to level 9 globally
     )
 
 .. doctest:: levels
 
     >>> ictr( 0, address = 'doctest' )( 'Top level trace.' )
+    TRACE0|  Top level trace.
     >>> ictr( 1, address = 'doctest' )( 'Detailed trace.' )
+      TRACE1|  Detailed trace.
     >>> ictr( 9, address = 'doctest' )( 'Very verbose trace.' )
+                      TRACE9|  Very verbose trace.
 
 .. testcleanup:: levels
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )
 
 Filtering by Level
 ===============================================================================
@@ -74,43 +63,27 @@ limit will be displayed.
 
 .. testsetup:: filtering
 
+    import sys
     import ictr
-    from io import StringIO
-    from unittest.mock import patch
-    capture = StringIO( )
-
-    class MockPrinter:
-        def __init__( self, address, flavor ):
-            pass
-        def __call__( self, record ):
-            print( f"PRINTED: {record.content.summary}", file = capture )
-        def provide_textualization_control( self ):
-            return None
-
-    def capture_factory( address, flavor ):
-        return MockPrinter( address, flavor )
-
     # Set max trace level to 1
     ictr = ictr.install(
-        printer_factories = [ capture_factory ],
+        printer_factories = [ sys.stdout ],
         trace_levels = { None: 1 }
     )
 
 .. doctest:: filtering
 
-    >>> ictr( 0, address = 'doctest' )( 'Level 0 (Shown)' )
-    >>> ictr( 1, address = 'doctest' )( 'Level 1 (Shown)' )
-    >>> ictr( 2, address = 'doctest' )( 'Level 2 (Hidden)' )
-
-    >>> print( capture.getvalue( ).strip( ) )
-    PRINTED: Level 0 (Shown)
-    PRINTED: Level 1 (Shown)
+    >>> ictr( 0, address = 'doctest' )( 'Level 0 visible' )
+    TRACE0|  Level 0 visible
+    >>> ictr( 1, address = 'doctest' )( 'Level 1 visible' )
+      TRACE1|  Level 1 visible
+    >>> ictr( 2, address = 'doctest' )( 'Level 2 hidden' )
 
 .. testcleanup:: filtering
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )
 
 Indentation
 ===============================================================================

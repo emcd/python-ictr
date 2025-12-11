@@ -31,52 +31,45 @@ emoji).
 
 .. testsetup:: flavors
 
+    import sys
     import ictr
-    from io import StringIO
-    from unittest.mock import patch
-    capture = StringIO( )
-
-    class MockPrinter:
-        def __init__( self, address, flavor ):
-            self.flavor = flavor
-        def __call__( self, record ):
-            print( f"<{self.flavor}> {record.content.summary}", file = capture )
-        def provide_textualization_control( self ):
-            return None
-
-    def capture_factory( address, flavor ):
-        return MockPrinter( address, flavor )
-
-    ictr = ictr.install( printer_factories = [ capture_factory ] )
+    ictr = ictr.install( printer_factories = [ sys.stdout ] )
 
 .. doctest:: flavors
 
     >>> # General information
     >>> ictr( 'note', address = 'doctest' )( 'Configuration loaded.' )
+    NOTE|  Configuration loaded.
 
     >>> # Warnings
     >>> ictr( 'monition', address = 'doctest' )( 'Disk space low.' )
+    MONITION|  Disk space low.
 
     >>> # Errors
     >>> ictr( 'error', address = 'doctest' )( 'Connection failed.' )
+    ERROR|  Connection failed.
 
     >>> # Critical failures
     >>> ictr( 'abort', address = 'doctest' )( 'System shutting down.' )
+    ABORT|  System shutting down.
 
     >>> # Successful operations
     >>> ictr( 'success', address = 'doctest' )( 'Build completed.' )
+    SUCCESS|  Build completed.
 
     >>> # Future/Pending tasks
     >>> ictr( 'future', address = 'doctest' )( 'TODO: Refactor this.' )
+    FUTURE|  TODO: Refactor this.
 
     >>> # Tips/Advice
     >>> ictr( 'advice', address = 'doctest' )( 'Try using --verbose for more info.' )
+    ADVICE|  Try using --verbose for more info.
 
 .. testcleanup:: flavors
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )
 
 Flavor Aliases
 ===============================================================================
@@ -93,40 +86,22 @@ For convenience, single-letter aliases are available for all standard flavors:
 
 .. testsetup:: aliases
 
+    import sys
     import ictr
-    # Setup capture
-    from io import StringIO
-    from unittest.mock import patch
-    capture = StringIO( )
-
-    class MockPrinter:
-        def __init__( self, address, flavor ):
-            self.flavor = flavor
-        def __call__( self, record ):
-            print( f"[{record.flavor}] {record.content.summary}", file = capture )
-        def provide_textualization_control( self ):
-            return None
-
-    def capture_factory( address, flavor ):
-        return MockPrinter( address, flavor )
-
-    ictr = ictr.install( printer_factories = [ capture_factory ] )
+    ictr = ictr.install( printer_factories = [ sys.stdout ] )
 
 .. doctest:: aliases
 
     >>> ictr( 'n', address = 'doctest' )( 'Note alias.' )
+    NOTE|  Note alias.
     >>> ictr( 'e', address = 'doctest' )( 'Error alias.' )
-
-    >>> # Output shows the resolved flavor
-    >>> print( capture.getvalue( ).strip( ) )
-    [n] Note alias.
-    [e] Error alias.
+    ERROR|  Error alias.
 
 .. testcleanup:: aliases
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )
 
 Exception-Capturing Flavors
 ===============================================================================

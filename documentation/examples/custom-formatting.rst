@@ -31,16 +31,16 @@ custom printer factory.
 
 .. testsetup:: custom_printer
 
-    import ictr as ictr_module
+    import ictr
     from io import StringIO
-    from unittest.mock import patch
-    
+
     class FilePrinter:
+        ''' Custom printer that writes to a file with simple formatting. '''
+
         def __init__( self, file ):
             self.file = file
 
         def __call__( self, record ):
-            # Simple custom format
             self.file.write( f"LOG: {record.content.summary}\n" )
 
         def provide_textualization_control( self ):
@@ -51,7 +51,7 @@ custom printer factory.
     def my_factory( address, flavor ):
         return FilePrinter( capture )
 
-    ictr = ictr_module.install( printer_factories = [ my_factory ] )
+    ictr = ictr.install( printer_factories = [ my_factory ] )
 
 .. doctest:: custom_printer
 
@@ -63,5 +63,5 @@ custom printer factory.
 .. testcleanup:: custom_printer
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )

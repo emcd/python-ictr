@@ -31,37 +31,17 @@ active exceptions.
 
 .. testsetup:: capture
 
-    import ictr as ictr_module
+    import ictr
     from io import StringIO
-    from unittest.mock import patch
-    import sys
-    
-    capture = StringIO()
-    
-    class MockPrinter:
-        def __init__( self, address, flavor ):
-            pass
-        def __call__( self, record ):
-            pass
 
-        def provide_textualization_control( self ):
-            return ictr_module.TextualizationControl(
-                columns_max_calculator = 80,
-                colorize = False
-            )
-
-    class StringPrinter:
-        def __init__( self, address, flavor ):
-            pass
-        def __call__( self, text ):
-            print( text, file = capture )
-        def provide_textualization_control( self ):
-            return ictr_module.TextualizationControl( colorize = False )
+    capture = StringIO( )
 
     def capture_factory( address, flavor ):
-        return StringPrinter( address, flavor )
+        ''' Printer that captures to StringIO for verification. '''
+        from ictr.standard import Printer
+        return Printer( target = capture )
 
-    ictr = ictr_module.install( printer_factories = [ capture_factory ] )
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: capture
 
@@ -80,8 +60,8 @@ active exceptions.
 .. testcleanup:: capture
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )
 
 Tracebacks
 ===============================================================================
@@ -91,39 +71,36 @@ You can enable stack traces for any flavor via configuration, but ``errorx`` and
 
 .. testsetup:: traceback
 
-    import ictr as ictr_module
+    import ictr
     from io import StringIO
-    from unittest.mock import patch
-    capture = StringIO()
-    
-    class StringPrinter:
-        def __init__(self, address, flavor): pass
-        def __call__(self, text): print(text, file=capture)
-        def provide_textualization_control(self):
-            return ictr_module.TextualizationControl(colorize=False)
 
-    def capture_factory(address, flavor): return StringPrinter(address, flavor)
-    
-    ictr = ictr_module.install(printer_factories=[capture_factory])
+    capture = StringIO( )
+
+    def capture_factory( address, flavor ):
+        ''' Printer that captures to StringIO for verification. '''
+        from ictr.standard import Printer
+        return Printer( target = capture )
+
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: traceback
 
-    >>> def faulty_function():
-    ...     raise ValueError("Invalid value")
-    
-    >>> try:
-    ...     faulty_function()
-    ... except ValueError:
-    ...     ictr('errorx', address='doctest')('Operation failed.')
+    >>> def faulty_function( ):
+    ...     raise ValueError( 'Invalid value' )
 
-    >>> output = capture.getvalue()
+    >>> try:
+    ...     faulty_function( )
+    ... except ValueError:
+    ...     ictr( 'errorx', address = 'doctest' )( 'Operation failed.' )
+
+    >>> output = capture.getvalue( )
     >>> '[ValueError] Invalid value' in output
     True
-    >>> 'faulty_function()' in output
+    >>> 'faulty_function( )' in output
     True
 
 .. testcleanup:: traceback
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )

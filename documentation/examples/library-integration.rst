@@ -55,24 +55,10 @@ The ``register_address`` function is convenient for libraries because:
 
 .. testsetup:: library
 
+    import sys
     import ictr
-    from io import StringIO
-    from unittest.mock import patch
-    capture = StringIO( )
-
-    class MockPrinter:
-        def __init__( self, address, flavor ):
-            self.flavor = flavor
-        def __call__( self, record ):
-            print( f"[{self.flavor}] {record.content.summary}", file = capture )
-        def provide_textualization_control( self ):
-            return None
-
-    def capture_factory( address, flavor ):
-        return MockPrinter( address, flavor )
-
-    # Simulate application install
-    ictr_app = ictr.install( printer_factories = [ capture_factory ] )
+    # Simulate application installing ictr
+    ictr_app = ictr.install( printer_factories = [ sys.stdout ] )
 
 .. doctest:: library
 
@@ -81,13 +67,10 @@ The ``register_address`` function is convenient for libraries because:
 
     >>> # Application uses the dispatcher to emit messages
     >>> ictr_app( 'note', address = 'mylib' )( 'Library initialization complete.' )
-
-    >>> # Verify the message was captured
-    >>> print( capture.getvalue( ).strip( ) )
-    [note] Library initialization complete.
+    NOTE|  Library initialization complete.
 
 .. testcleanup:: library
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )

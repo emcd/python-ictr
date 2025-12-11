@@ -35,33 +35,17 @@ If ``rich`` is installed, ``ictr`` will automatically use it for:
 
 .. testsetup:: rich
 
-    import ictr as ictr_module
+    import ictr
     from io import StringIO
-    from unittest.mock import patch, MagicMock
-    
-    capture = StringIO()
-    
-    # We need to simulate Rich availability and a printer that supports color
-    
-    class RichPrinter:
-        def __init__( self, address, flavor ):
-            pass
-        def __call__( self, text ):
-            # text contains ANSI codes if Rich rendered it
-            print( text, file = capture )
-        def provide_textualization_control( self ):
-            return ictr_module.TextualizationControl(
-                colorize = True,
-                columns_max_calculator = 80
-            )
+
+    capture = StringIO( )
 
     def capture_factory( address, flavor ):
-        return RichPrinter( address, flavor )
+        ''' Printer that captures Rich-formatted output. '''
+        from ictr.standard import Printer
+        return Printer( target = capture, force_color = True )
 
-    # Force ENRICH to True in standard module (if mocking is needed)
-    # But we assume rich is installed in dev environment.
-
-    ictr = ictr_module.install( printer_factories = [ capture_factory ] )
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: rich
 
@@ -71,8 +55,12 @@ If ``rich`` is installed, ``ictr`` will automatically use it for:
     >>> data = { 'a': 1, 'b': [ 2, 3 ] }
     >>> ictr( 'note', address = 'doctest' )( 'Data:', data )
 
+    >>> # Verify output contains the message (may include ANSI color codes)
+    >>> 'Rich output enabled' in capture.getvalue( )
+    True
+
 .. testcleanup:: rich
 
     import builtins
-    if hasattr(builtins, 'ictr'):
-        delattr(builtins, 'ictr')
+    if hasattr( builtins, 'ictr' ):
+        delattr( builtins, 'ictr' )
