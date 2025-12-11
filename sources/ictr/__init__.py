@@ -28,6 +28,7 @@ from . import exceptions
 # --- END: Injected by Copier ---
 
 
+from .dispatchers import *
 from .printers import *
 from .textualizers import *
 
@@ -35,4 +36,4 @@ from .textualizers import *
 __version__ = '1.0a0'
 
 
-# TODO: Reclassify package modules as immutable and concealed.
+__.immut.finalize_module( __name__, recursive = True )

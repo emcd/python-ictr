@@ -94,8 +94,9 @@ TraceLevelsRegistryLiberal: __.typx.TypeAlias = (
 
 def _provide_active_flavors_default( ) -> ActiveFlavorsRegistry:
     ''' Provides default set of globally active flavors. '''
-    return __.immut.Dictionary( {
-        None: frozenset( _flavors.flavor_specifications_standard.keys( ) ) } )
+    flavors = set( _flavors.flavor_specifications_standard.keys( ) )
+    flavors.update( _flavors.flavor_aliases_standard.keys( ) )
+    return __.immut.Dictionary( { None: frozenset( flavors ) } )
 
 
 builtins_alias_default: __.typx.Annotated[
@@ -332,10 +333,6 @@ GeneralcfgArgument: __.typx.TypeAlias = __.typx.Annotated[
             defaults to a suitable configuration for application use.
         ''' ),
 ]
-IncludeContextArgument: __.typx.TypeAlias = __.typx.Annotated[
-    __.Absential[ bool ],
-    __.typx.Doc( ''' Include stack frame with output? ''' ),
-]
 InstallAliasArgument: __.typx.TypeAlias = __.typx.Annotated[
     str,
     __.typx.Doc(
@@ -452,7 +449,7 @@ def install( # noqa: PLR0913
 def produce_dispatcher( # noqa: PLR0913
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
-    modulecfgs: AddresscfgsArgument = __.absent,
+    addresscfgs: AddresscfgsArgument = __.absent,
     printer_factories: PrinterFactoriesArgument = __.absent,
     trace_levels: TraceLevelsArgument = __.absent,
     evname_active_flavors: EvnActiveFlavorsArgument = __.absent,
@@ -464,10 +461,10 @@ def produce_dispatcher( # noqa: PLR0913
     initargs: dict[ str, __.typx.Any ] = { }
     if not __.is_absent( generalcfg ):
         initargs[ 'generalcfg' ] = generalcfg
-    if not __.is_absent( modulecfgs ):
-        initargs[ 'modulecfgs' ] = AddressesConfigurationsRegistry(
+    if not __.is_absent( addresscfgs ):
+        initargs[ 'addresscfgs' ] = AddressesConfigurationsRegistry(
             {   address: configuration for address, configuration
-                in modulecfgs.items( ) } )
+                in addresscfgs.items( ) } )
     if not __.is_absent( printer_factories ):
         initargs[ 'printer_factories' ] = printer_factories
     _add_dispatcher_initarg_active_flavors(
@@ -482,7 +479,6 @@ def register_address(
     name: AddressArgument = __.absent,
     flavors: FlavorsArgument = __.absent,
     compositor_factory: CompositorFactoryArgument = __.absent,
-    include_context: IncludeContextArgument = __.absent,
     introducer: IntroducerArgument = __.absent,
 ) -> _cfg.AddressConfiguration:
     ''' Registers address configuration on the builtin dispatcher.
@@ -507,13 +503,11 @@ def register_address(
         nomargs[ 'flavors' ] = __.immut.Dictionary( flavors )
     if not __.is_absent( compositor_factory ):
         nomargs[ 'compositor_factory' ] = compositor_factory
-    if not __.is_absent( include_context ):
-        nomargs[ 'include_context' ] = include_context
     if not __.is_absent( introducer ):
         nomargs[ 'introducer' ] = introducer
     configuration = _cfg.AddressConfiguration( **nomargs )
-    return dispatcher.register_address(
-        name = name, configuration = configuration )
+    dispatcher.register_address( name = name, configuration = configuration )
+    return configuration
 
 
 def _add_dispatcher_initarg_active_flavors(
@@ -619,7 +613,7 @@ def _merge_ic_configuration(
     result[ 'flavors' ] = (
             dict( base.get( 'flavors', dict( ) ) )
         |   dict( update.get( 'flavors', dict( ) ) ) )
-    for ename in ( 'compositor_factory', 'include_context', 'introducer' ):
+    for ename in ( 'compositor_factory', 'introducer' ):
         uvalue = update.get( ename )
         if uvalue is not None: result[ ename ] = uvalue
         elif ename in base: result[ ename ] = base[ ename ]

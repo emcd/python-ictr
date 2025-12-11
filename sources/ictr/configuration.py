@@ -39,14 +39,6 @@ class FlavorConfiguration( __.immut.DataclassObject ):
                 Default ``None`` inherits from cumulative configuration.
             ''' ),
     ] = None
-    include_context: __.typx.Annotated[
-        __.typx.Optional[ bool ],
-        __.typx.Doc(
-            ''' Include stack frame with output?
-
-                Default ``None`` inherits from cumulative configuration.
-            ''' ),
-    ] = None
 
 
 FlavorsRegistry: __.typx.TypeAlias = (
@@ -95,14 +87,6 @@ class AddressConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
     ] = __.dcls.field( default_factory = FlavorsRegistry )
-    include_context: __.typx.Annotated[
-        __.typx.Optional[ bool ],
-        __.typx.Doc(
-            ''' Include stack frame with output?
-
-                Default ``None`` inherits from cumulative configuration.
-            ''' ),
-    ] = None
 
 
 class DispatcherConfiguration( __.immut.DataclassObject ):
@@ -121,6 +105,3 @@ class DispatcherConfiguration( __.immut.DataclassObject ):
         __.typx.Doc(
             ''' Registry of flavor identifiers to configurations. ''' ),
     ] = __.dcls.field( default_factory = produce_flavors_default )
-    include_context: __.typx.Annotated[
-        bool, __.typx.Doc( ''' Include stack frame with output? ''' )
-    ] = False

@@ -71,6 +71,14 @@ class Compositor( __.Compositor ):
         raise __.ContentMisclassification( type( content ) )
 
 
+def _calculate_ccount_max(
+    initial: str, subsequent: __.typx.Optional[ str ]
+) -> int:
+    i_ccount = __.count_columns_visual( initial )
+    if subsequent is None: return i_ccount
+    return max( i_ccount, __.count_columns_visual( subsequent ) )
+
+
 def _render_detail( auxdata: _core.CompositorState, detail: object ) -> str:
     configuration = auxdata.configuration
     columns_max = auxdata.linearizer.columns_max
@@ -79,9 +87,12 @@ def _render_detail( auxdata: _core.CompositorState, detail: object ) -> str:
     detail_prefix_s = configuration.detail_prefix_subsequent
     if detail_prefix_s is None:
         detail_prefix_s = ' ' * detail_prefix_i_ccount
-    line_prefix_s = configuration.line_prefix_subsequent
-    prefix_ccount = (
-        __.count_columns_visual( line_prefix_s ) + detail_prefix_i_ccount )
+    detail_prefix_ccount = _calculate_ccount_max(
+        detail_prefix_i, detail_prefix_s )
+    line_prefix_ccount = _calculate_ccount_max(
+        configuration.line_prefix_initial,
+        configuration.line_prefix_subsequent )
+    prefix_ccount = line_prefix_ccount + detail_prefix_ccount
     match auxdata.linearizer.columns_constraint:
         case _core.ColumnsConstraints.Complect:
             remainder_ccount = (
@@ -116,9 +127,9 @@ def _complect_render_summary(
     configuration = auxdata.configuration
     columns_max = auxdata.linearizer.columns_max
     line_prefix_i = configuration.line_prefix_initial
-    line_prefix_s = configuration.line_prefix_subsequent
     intro_ccount = __.count_columns_visual( introduction )
-    prefix_ccount = __.count_columns_visual( line_prefix_s )
+    prefix_ccount = _calculate_ccount_max(
+        line_prefix_i, configuration.line_prefix_subsequent )
     remainder_ccount = (
         __.absent if __.is_absent( columns_max )
         else columns_max - prefix_ccount )

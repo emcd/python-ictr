@@ -42,11 +42,17 @@ def produce_flavors(
     compositor = _compositors.Compositor(
         configuration = compositorcfg, introducer = introducer )
     for name, spec in __.flavor_specifications_standard.items( ):
-        tcfg = compositorcfg
+        ccfg = compositorcfg
         if spec.stack:
-            tcfg = __.dcls.replace( compositorcfg, include_exception = True )
+            lcfg = ccfg.linearizercfg
+            ecfg = __.dcls.replace(
+                lcfg.exceptionscfg,
+                enable_discovery = True,
+                enable_stacktraces = True )
+            lcfg = __.dcls.replace( lcfg, exceptionscfg = ecfg )
+            ccfg = __.dcls.replace( ccfg, linearizercfg = lcfg )
         compositor = _compositors.Compositor(
-            configuration = tcfg, introducer = introducer )
+            configuration = ccfg, introducer = introducer )
         flavors[ name ] = __.FlavorConfiguration(
             compositor_factory = _produce_compositor_factory( compositor ) )
     for alias, name in __.flavor_aliases_standard.items( ):
@@ -54,12 +60,12 @@ def produce_flavors(
     for level in range( 10 ):
         indent_i = '  ' * level
         indent_s = '  ' * ( level + 1 )
-        tcfg = __.dcls.replace(
+        ccfg = __.dcls.replace(
             compositorcfg,
             line_prefix_initial = indent_i,
             line_prefix_subsequent = indent_s )
         compositor = _compositors.Compositor(
-            configuration = tcfg, introducer = introducer )
+            configuration = ccfg, introducer = introducer )
         flavors[ level ] = __.FlavorConfiguration(
             compositor_factory = _produce_compositor_factory( compositor ) )
     return __.immut.Dictionary( flavors )

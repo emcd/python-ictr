@@ -127,7 +127,8 @@ def produce_columns_max_calculator(
 ) -> ColumnsMaxCalculator:
     fileno_revealer = getattr( target, 'fileno', None )
     if fileno_revealer is None: return None
-    fileno = fileno_revealer( )
+    try: fileno = fileno_revealer( )
+    except ( IOError, OSError, __.io.UnsupportedOperation ): return None
     if not __.os.isatty( fileno ): return None
 
     def calculate( ) -> __.typx.Optional[ int ]:
