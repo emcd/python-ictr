@@ -104,7 +104,84 @@ Or, install via ``pip``:
     pip install ictr
 
 
-.. todo:: Provide usage examples once documentation/examples/ is populated.
+Examples 💡
+===============================================================================
+
+For more detailed examples, please see the `examples documentation
+<https://emcd.github.io/python-ictr/stable/sphinx-html/examples/index.html>`_.
+
+Basic Usage
+-------------------------------------------------------------------------------
+
+Install an ``ictr`` dispatcher as a Python builtin (default alias, ``ictr``)
+and then use it anywhere in your codebase:
+
+.. code-block:: python
+
+    import ictr
+
+    ictr.install( )
+
+    # Emit messages with different flavors
+    ictr( 'note' )( 'Application started.' )       # NOTE|  Application started.
+    ictr( 'error' )( 'Connection failed.' )        # ERROR|  Connection failed.
+    ictr( 'success' )( 'Task completed.' )         # SUCCESS|  Task completed.
+
+Trace Levels
+-------------------------------------------------------------------------------
+
+Use numeric trace levels (0-9) for hierarchical debugging output:
+
+.. code-block:: python
+
+    import ictr
+
+    ictr.install( trace_levels = { None: 3 } )  # Enable levels 0-3 globally
+
+    ictr( 0 )( 'Top-level operation' )          # TRACE0|  Top-level operation
+    ictr( 1 )( 'Sub-operation details' )        #   TRACE1|  Sub-operation details
+    ictr( 2 )( 'More detail' )                  #     TRACE2|  More detail
+    ictr( 4 )( 'Too verbose' )                  # (suppressed - level > 3)
+
+Exception Handling
+-------------------------------------------------------------------------------
+
+Use ``errorx`` or ``abortx`` flavors to capture active exceptions with
+tracebacks:
+
+.. code-block:: python
+
+    import ictr
+
+    ictr.install( )
+
+    try:
+        result = 1 / 0
+    except ZeroDivisionError:
+        ictr( 'errorx' )( 'Calculation failed.' )
+        # ERROR|  Calculation failed.
+        #
+        # [ZeroDivisionError] division by zero
+        #   File 'example.py', line 8, in <module>
+        #       result = 1 / 0
+
+Library Integration
+-------------------------------------------------------------------------------
+
+Libraries can register their own configurations without overriding those of the
+application:
+
+.. code-block:: python
+
+    # mylibrary/__init__.py
+    import ictr
+
+    ictr.register_address( 'mylibrary' )
+
+When ``install`` is called by the application, any addresses that were
+previously registered via ``register_address`` are incorporated into the
+installed dispatcher. This allows applications to setup output after libraries
+have registered their configurations.
 
 
 Motivation 🚚
