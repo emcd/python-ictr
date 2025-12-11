@@ -27,37 +27,31 @@ configuration.
 Registering Addresses
 ===============================================================================
 
-Libraries should use ``register_address`` instead of ``install``. This allows
-the library to set defaults for its own modules, which can be overridden by
-the application developer.
+Libraries should use ``register_address`` to configure their own module addresses
+without interfering with the application's configuration. The library can set defaults
+for its modules, which the application can override.
 
 .. code-block:: python
 
     # mylibrary/__init__.py
     import ictr
-    
+
     # Register library-specific configuration
     ictr.register_address(
         'mylibrary',
         flavors={
-            # Custom library flavors or overrides
+            # Custom library flavors or overrides if needed
         }
     )
 
-    # Use in code
-    def do_something():
-        # Will use registered configuration if installed, or default if not.
-        # But 'ictr' needs to be available. 
-        # Libraries typically don't import 'ictr' from builtins directly 
-        # unless they document it as a dependency.
-        # Better pattern: import package
-        import ictr
-        # Access dispatcher. 
-        # If application installed it, it's configured.
-        # If not, you might need a local fallback or check.
-        pass
+The ``register_address`` function is convenient for libraries because:
 
-Actually, ``register_address`` is available on the module level for convenience.
+* If the application has installed ``ictr``, the library's configuration is registered
+  with that dispatcher.
+* If the application hasn't installed ``ictr``, a default dispatcher is created
+  automatically.
+* Either way, the library can emit messages without worrying about whether the
+  application has initialized ``ictr``.
 
 .. testsetup:: library
 
@@ -82,20 +76,15 @@ Actually, ``register_address`` is available on the module level for convenience.
 
 .. doctest:: library
 
-    >>> # Library code registers its preferences
-    >>> ictr.register_address(
-    ...     'mylib',
-    ...     # Library wants 'debug' flavor to be active by default? 
-    ...     # No, active flavors are global/per-address config.
-    ...     # Configuration is for compositors/printers/etc.
-    ... )
-    AddressConfiguration(compositor_factory=None, flavors=frigid.dictionaries.Dictionary( {} ))
-    
-    >>> # Using the installed dispatcher
-    >>> ictr_app('note', address='doctest')('Library message.')
-    
-    >>> print(capture.getvalue().strip())
-    [note] Library message.
+    >>> # Library registers its address configuration
+    >>> config = ictr.register_address( 'mylib' )
+
+    >>> # Application uses the dispatcher to emit messages
+    >>> ictr_app( 'note', address = 'mylib' )( 'Library initialization complete.' )
+
+    >>> # Verify the message was captured
+    >>> print( capture.getvalue( ).strip( ) )
+    [note] Library initialization complete.
 
 .. testcleanup:: library
 
