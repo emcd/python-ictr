@@ -44,30 +44,32 @@ If ``rich`` is installed, ``ictr`` will automatically use it for:
     # We need to simulate Rich availability and a printer that supports color
     
     class RichPrinter:
-        def __init__(self, address, flavor): pass
-        def __call__(self, text):
+        def __init__( self, address, flavor ):
+            pass
+        def __call__( self, text ):
             # text contains ANSI codes if Rich rendered it
-            print(text, file=capture)
-        def provide_textualization_control(self):
+            print( text, file = capture )
+        def provide_textualization_control( self ):
             return ictr_module.TextualizationControl(
-                colorize=True,
-                columns_max_calculator=80
+                colorize = True,
+                columns_max_calculator = 80
             )
 
-    def capture_factory(address, flavor): return RichPrinter(address, flavor)
-    
+    def capture_factory( address, flavor ):
+        return RichPrinter( address, flavor )
+
     # Force ENRICH to True in standard module (if mocking is needed)
     # But we assume rich is installed in dev environment.
-    
-    ictr = ictr_module.install(printer_factories=[capture_factory])
+
+    ictr = ictr_module.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: rich
 
-    >>> ictr('note', address='doctest')('Rich output enabled.')
-    
+    >>> ictr( 'note', address = 'doctest' )( 'Rich output enabled.' )
+
     >>> # Complex data structures are pretty-printed
-    >>> data = {'a': 1, 'b': [2, 3]}
-    >>> ictr('note', address='doctest')('Data:', data)
+    >>> data = { 'a': 1, 'b': [ 2, 3 ] }
+    >>> ictr( 'note', address = 'doctest' )( 'Data:', data )
 
 .. testcleanup:: rich
 

@@ -64,18 +64,21 @@ Actually, ``register_address`` is available on the module level for convenience.
     import ictr
     from io import StringIO
     from unittest.mock import patch
-    capture = StringIO()
-    
-    class MockPrinter:
-        def __init__(self, address, flavor): self.flavor = flavor
-        def __call__(self, record):
-            print(f"[{self.flavor}] {record.content.summary}", file=capture)
-        def provide_textualization_control(self): return None
+    capture = StringIO( )
 
-    def capture_factory(address, flavor): return MockPrinter(address, flavor)
-    
+    class MockPrinter:
+        def __init__( self, address, flavor ):
+            self.flavor = flavor
+        def __call__( self, record ):
+            print( f"[{self.flavor}] {record.content.summary}", file = capture )
+        def provide_textualization_control( self ):
+            return None
+
+    def capture_factory( address, flavor ):
+        return MockPrinter( address, flavor )
+
     # Simulate application install
-    ictr_app = ictr.install(printer_factories=[capture_factory])
+    ictr_app = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: library
 

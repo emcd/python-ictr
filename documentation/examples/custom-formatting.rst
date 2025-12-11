@@ -36,28 +36,28 @@ custom printer factory.
     from unittest.mock import patch
     
     class FilePrinter:
-        def __init__(self, file):
+        def __init__( self, file ):
             self.file = file
-            
-        def __call__(self, record):
+
+        def __call__( self, record ):
             # Simple custom format
-            self.file.write(f"LOG: {record.content.summary}\n")
-            
-        def provide_textualization_control(self):
+            self.file.write( f"LOG: {record.content.summary}\n" )
+
+        def provide_textualization_control( self ):
             return None
 
-    capture = StringIO()
-    
-    def my_factory(address, flavor):
-        return FilePrinter(capture)
-        
-    ictr = ictr_module.install(printer_factories=[my_factory])
+    capture = StringIO( )
+
+    def my_factory( address, flavor ):
+        return FilePrinter( capture )
+
+    ictr = ictr_module.install( printer_factories = [ my_factory ] )
 
 .. doctest:: custom_printer
 
-    >>> ictr('note', address='doctest')('Custom log message.')
-    
-    >>> print(capture.getvalue().strip())
+    >>> ictr( 'note', address = 'doctest' )( 'Custom log message.' )
+
+    >>> print( capture.getvalue( ).strip( ) )
     LOG: Custom log message.
 
 .. testcleanup:: custom_printer

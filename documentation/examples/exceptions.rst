@@ -39,39 +39,39 @@ active exceptions.
     capture = StringIO()
     
     class MockPrinter:
-        def __init__(self, address, flavor):
+        def __init__( self, address, flavor ):
             pass
-        def __call__(self, record):
+        def __call__( self, record ):
             pass
-            
-        def provide_textualization_control(self):
-            return ictr_module.TextualizationControl(
-                columns_max_calculator=80,
-                colorize=False
-            )
-            
-    class StringPrinter:
-        def __init__(self, address, flavor):
-            pass
-        def __call__(self, text):
-            print(text, file=capture)
-        def provide_textualization_control(self):
-            return ictr_module.TextualizationControl(colorize=False)
 
-    def capture_factory(address, flavor):
-        return StringPrinter(address, flavor)
-    
-    ictr = ictr_module.install(printer_factories=[capture_factory])
+        def provide_textualization_control( self ):
+            return ictr_module.TextualizationControl(
+                columns_max_calculator = 80,
+                colorize = False
+            )
+
+    class StringPrinter:
+        def __init__( self, address, flavor ):
+            pass
+        def __call__( self, text ):
+            print( text, file = capture )
+        def provide_textualization_control( self ):
+            return ictr_module.TextualizationControl( colorize = False )
+
+    def capture_factory( address, flavor ):
+        return StringPrinter( address, flavor )
+
+    ictr = ictr_module.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: capture
 
     >>> try:
     ...     1 / 0
     ... except ZeroDivisionError:
-    ...     ictr('errorx', address='doctest')('Calculation failed.')
-    
+    ...     ictr( 'errorx', address = 'doctest' )( 'Calculation failed.' )
+
     >>> # Verify output contains exception info
-    >>> output = capture.getvalue()
+    >>> output = capture.getvalue( )
     >>> '[ZeroDivisionError] division by zero' in output
     True
     >>> 'Calculation failed.' in output

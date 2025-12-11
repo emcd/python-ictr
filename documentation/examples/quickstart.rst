@@ -51,28 +51,28 @@ various message "flavors".
     
     # Mock printer that satisfies protocol
     class MockPrinter:
-        def __init__(self, address, flavor):
+        def __init__( self, address, flavor ):
             self.address = address
             self.flavor = flavor
-        def __call__(self, record):
+        def __call__( self, record ):
             # Simple simulation of standard printer for doctest
-            print(f"{record.content.summary}", file=capture)
-        def provide_textualization_control(self):
+            print( f"{record.content.summary}", file = capture )
+        def provide_textualization_control( self ):
             return None
 
-    def capture_factory(address, flavor):
-        return MockPrinter(address, flavor)
+    def capture_factory( address, flavor ):
+        return MockPrinter( address, flavor )
 
     # Install with capture printer
-    ictr = ictr.install(printer_factories=[capture_factory])
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: quickstart
 
     >>> # Create a reporter for the 'note' flavor and print a message
-    >>> ictr('note', address='doctest')('System initialized.')
-    
+    >>> ictr( 'note', address = 'doctest' )( 'System initialized.' )
+
     >>> # Create a reporter for the 'error' flavor
-    >>> ictr('error', address='doctest')('Something went wrong.')
+    >>> ictr( 'error', address = 'doctest' )( 'Something went wrong.' )
 
 .. testcleanup:: quickstart
 
@@ -91,24 +91,25 @@ You can chain the dispatcher call and the reporter call for succinct logging:
     import ictr
     from io import StringIO
     from unittest.mock import patch
-    capture = StringIO()
-    
-    class MockPrinter:
-        def __init__(self, address, flavor):
-            self.flavor = flavor
-        def __call__(self, record):
-            print(f"[{self.flavor}] {record.content.summary}", file=capture)
-        def provide_textualization_control(self): return None
+    capture = StringIO( )
 
-    def capture_factory(address, flavor):
-        return MockPrinter(address, flavor)
-        
-    ictr = ictr.install(printer_factories=[capture_factory])
+    class MockPrinter:
+        def __init__( self, address, flavor ):
+            self.flavor = flavor
+        def __call__( self, record ):
+            print( f"[{self.flavor}] {record.content.summary}", file = capture )
+        def provide_textualization_control( self ):
+            return None
+
+    def capture_factory( address, flavor ):
+        return MockPrinter( address, flavor )
+
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: oneliners
 
-    >>> ictr('note', address='doctest')('Processing file...')
-    >>> ictr('success', address='doctest')('File processed successfully.')
+    >>> ictr( 'note', address = 'doctest' )( 'Processing file...' )
+    >>> ictr( 'success', address = 'doctest' )( 'File processed successfully.' )
 
 .. testcleanup:: oneliners
 
@@ -127,26 +128,27 @@ if needed:
     import ictr
     from io import StringIO
     from unittest.mock import patch
-    capture = StringIO()
-    
-    class MockPrinter:
-        def __init__(self, address, flavor):
-            self.address = address
-        def __call__(self, record):
-            print(f"[{self.address}] {record.content.summary}", file=capture)
-        def provide_textualization_control(self): return None
+    capture = StringIO( )
 
-    def capture_factory(address, flavor):
-        return MockPrinter(address, flavor)
-    
-    ictr = ictr.install(printer_factories=[capture_factory])
+    class MockPrinter:
+        def __init__( self, address, flavor ):
+            self.address = address
+        def __call__( self, record ):
+            print( f"[{self.address}] {record.content.summary}", file = capture )
+        def provide_textualization_control( self ):
+            return None
+
+    def capture_factory( address, flavor ):
+        return MockPrinter( address, flavor )
+
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: address
 
-    >>> ictr('note', address='my.custom.component')('Starting component...')
+    >>> ictr( 'note', address = 'my.custom.component' )( 'Starting component...' )
 
     >>> # Verify output contains custom address
-    >>> print(capture.getvalue().strip())
+    >>> print( capture.getvalue( ).strip( ) )
     [my.custom.component] Starting component...
 
 .. testcleanup:: address

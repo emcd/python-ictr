@@ -34,42 +34,43 @@ emoji).
     import ictr
     from io import StringIO
     from unittest.mock import patch
-    capture = StringIO()
-    
-    class MockPrinter:
-        def __init__(self, address, flavor):
-            self.flavor = flavor
-        def __call__(self, record):
-            print(f"<{self.flavor}> {record.content.summary}", file=capture)
-        def provide_textualization_control(self): return None
+    capture = StringIO( )
 
-    def capture_factory(address, flavor):
-        return MockPrinter(address, flavor)
-    
-    ictr = ictr.install(printer_factories=[capture_factory])
+    class MockPrinter:
+        def __init__( self, address, flavor ):
+            self.flavor = flavor
+        def __call__( self, record ):
+            print( f"<{self.flavor}> {record.content.summary}", file = capture )
+        def provide_textualization_control( self ):
+            return None
+
+    def capture_factory( address, flavor ):
+        return MockPrinter( address, flavor )
+
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: flavors
 
     >>> # General information
-    >>> ictr('note', address='doctest')('Configuration loaded.')
-    
+    >>> ictr( 'note', address = 'doctest' )( 'Configuration loaded.' )
+
     >>> # Warnings
-    >>> ictr('monition', address='doctest')('Disk space low.')
-    
+    >>> ictr( 'monition', address = 'doctest' )( 'Disk space low.' )
+
     >>> # Errors
-    >>> ictr('error', address='doctest')('Connection failed.')
-    
+    >>> ictr( 'error', address = 'doctest' )( 'Connection failed.' )
+
     >>> # Critical failures
-    >>> ictr('abort', address='doctest')('System shutting down.')
-    
+    >>> ictr( 'abort', address = 'doctest' )( 'System shutting down.' )
+
     >>> # Successful operations
-    >>> ictr('success', address='doctest')('Build completed.')
-    
+    >>> ictr( 'success', address = 'doctest' )( 'Build completed.' )
+
     >>> # Future/Pending tasks
-    >>> ictr('future', address='doctest')('TODO: Refactor this.')
-    
+    >>> ictr( 'future', address = 'doctest' )( 'TODO: Refactor this.' )
+
     >>> # Tips/Advice
-    >>> ictr('advice', address='doctest')('Try using --verbose for more info.')
+    >>> ictr( 'advice', address = 'doctest' )( 'Try using --verbose for more info.' )
 
 .. testcleanup:: flavors
 
@@ -96,27 +97,28 @@ For convenience, single-letter aliases are available for all standard flavors:
     # Setup capture
     from io import StringIO
     from unittest.mock import patch
-    capture = StringIO()
-    
-    class MockPrinter:
-        def __init__(self, address, flavor):
-            self.flavor = flavor
-        def __call__(self, record):
-            print(f"[{record.flavor}] {record.content.summary}", file=capture)
-        def provide_textualization_control(self): return None
+    capture = StringIO( )
 
-    def capture_factory(address, flavor):
-        return MockPrinter(address, flavor)
-    
-    ictr = ictr.install(printer_factories=[capture_factory])
+    class MockPrinter:
+        def __init__( self, address, flavor ):
+            self.flavor = flavor
+        def __call__( self, record ):
+            print( f"[{record.flavor}] {record.content.summary}", file = capture )
+        def provide_textualization_control( self ):
+            return None
+
+    def capture_factory( address, flavor ):
+        return MockPrinter( address, flavor )
+
+    ictr = ictr.install( printer_factories = [ capture_factory ] )
 
 .. doctest:: aliases
 
-    >>> ictr('n', address='doctest')('Note alias.')
-    >>> ictr('e', address='doctest')('Error alias.')
-    
+    >>> ictr( 'n', address = 'doctest' )( 'Note alias.' )
+    >>> ictr( 'e', address = 'doctest' )( 'Error alias.' )
+
     >>> # Output shows the resolved flavor
-    >>> print(capture.getvalue().strip())
+    >>> print( capture.getvalue( ).strip( ) )
     [n] Note alias.
     [e] Error alias.
 
