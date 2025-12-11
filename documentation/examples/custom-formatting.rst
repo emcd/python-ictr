@@ -18,16 +18,50 @@
 
 
 *******************************************************************************
-Examples
+Custom Formatting
 *******************************************************************************
 
-.. toctree::
-   :maxdepth: 2
+You can customize how messages are rendered and delivered.
 
-   quickstart
-   flavors
-   trace-levels
-   exceptions
-   library-integration
-   rich-formatting
-   custom-formatting
+Custom Printers
+===============================================================================
+
+You can send output to files, loggers, or other destinations by providing a
+custom printer factory.
+
+.. testsetup:: custom_printer
+
+    import ictr as ictr_module
+    from io import StringIO
+    from unittest.mock import patch
+    
+    class FilePrinter:
+        def __init__(self, file):
+            self.file = file
+            
+        def __call__(self, record):
+            # Simple custom format
+            self.file.write(f"LOG: {record.content.summary}\n")
+            
+        def provide_textualization_control(self):
+            return None
+
+    capture = StringIO()
+    
+    def my_factory(address, flavor):
+        return FilePrinter(capture)
+        
+    ictr = ictr_module.install(printer_factories=[my_factory])
+
+.. doctest:: custom_printer
+
+    >>> ictr('note', address='doctest')('Custom log message.')
+    
+    >>> print(capture.getvalue().strip())
+    LOG: Custom log message.
+
+.. testcleanup:: custom_printer
+
+    import builtins
+    if hasattr(builtins, 'ictr'):
+        delattr(builtins, 'ictr')
