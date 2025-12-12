@@ -1,0 +1,1 @@
+Add errorx and abortx flavors for automatic exception capture and formatting with full stack traces.
