@@ -42,7 +42,7 @@ class Auxiliaries( __.immut.DataclassObject ):
     time_formatter: __.typx.Annotated[
         __.typx.Callable[ [ str ], str ],
         __.ddoc.Doc( ''' Returns current time in specified format. ''' ),
-    ] = __.time.strftime
+    ] = lambda fmt: __.Datetime.now( __.Timezone.utc ).strftime( fmt )
 
 
 class ColumnsConstraints( __.enum.Enum ):
