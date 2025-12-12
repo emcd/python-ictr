@@ -1,1 +1,0 @@
-Clarify library integration workflow with clear separation of concerns between libraries and applications.

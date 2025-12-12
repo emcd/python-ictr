@@ -1,1 +1,0 @@
-Add standard message flavors with semantic labels and optional emoji/color styling: note, monition, error, abort, future, success, and advice.

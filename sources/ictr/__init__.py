@@ -33,7 +33,7 @@ from .printers import *
 from .textualizers import *
 
 
-__version__ = '1.0a0'
+__version__ = '1.0a1'
 
 
 __.immut.finalize_module( __name__, recursive = True )
