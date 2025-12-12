@@ -1,0 +1,1 @@
+Provide global dispatcher available in Python builtins after initial setup for zero-import access throughout applications.

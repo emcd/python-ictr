@@ -1,0 +1,1 @@
+Add comprehensive examples documentation covering basic usage, trace levels, exception handling, and library integration.

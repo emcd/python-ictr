@@ -1,0 +1,1 @@
+Implement ten hierarchical trace levels (0-9) with automatic indentation for visualizing call depth and execution flow.
