@@ -30,6 +30,7 @@ from . import exceptions
 
 from .dispatchers import *
 from .printers import *
+from .renderables import *
 from .textualizers import *
 
 

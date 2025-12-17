@@ -50,3 +50,12 @@ recursive_stacktraces
 addresss
 enable_stacktraces
 linearizercfg
+
+JsonRenderable
+render_as_json
+JsonRenderableDataclass
+render_as_json
+MarkdownRenderable
+render_as_markdown
+MarkdownRenderableDataclass
+render_as_markdown

@@ -1,353 +1,127 @@
-# ICTR Rendering Protocols and Linearizer Refactoring
+# ICTR Renderables Integration - Remaining Work
 
 ## Overview
 
-This document captures the design for extending `ictr` with:
+This document tracks remaining work for `ictr` renderables integration with `appcore`.
 
-1. **Renderable protocols** — allowing objects to control their representation in various formats
-2. **Linearizer refactoring** — exposing linearization as a public API for use by `appcore` and other consumers
-3. **JSON textualization** — structured logging support
+**Goal**: Enable objects to control their rendering through protocols, supporting CLI display needs while keeping `ictr` focused on terminal/log output.
 
-These changes support `appcore`'s CLI display needs while keeping `ictr` focused on terminal/log output concerns.
+**Status**: Phase 1 complete (linearizers refactored and exported). Phase 2 in progress (protocols partially implemented, pending appcore validation).
 
-## Design Principles
+## Current Status
 
-### Separation of Concerns
+### ✅ Completed (as of 1.0a1)
 
-| Component | Responsibility |
-|-----------|----------------|
-| **Textualizer** | `Record` → formatted string |
-| **Printer** | String → destination (stream, file) |
-| **Linearizer** | Object → lines of text (intermediate step) |
+**Phase 1 - Linearizer Refactoring**:
+- `LinearizerConfiguration` and `LinearizerState` implemented
+- `CompositorState` refactored to compose `LinearizerState`
+- Linearizers exported publicly from `ictr.standard`
 
-### Protocol Resolution
-
-Objects can implement protocols to control their rendering. Fallback chains provide sensible defaults:
-
-1. Check for specific protocol method (e.g., `render_as_json`)
-2. Check for base protocol (`render_as_dictionary`)
-3. Dataclass introspection (excluding `_`-prefixed fields)
-4. Basic type pass-through
-5. `repr()` fallback
-
-### Package Boundaries
-
-| Concern | Package | Rationale |
-|---------|---------|-----------|
-| `DictionaryRenderable` | `ictr` | Base for serialization |
-| `JsonRenderable` | `ictr` | Structured logging |
-| `MarkdownRenderable` | `ictr` | Terminal display via Rich |
-| `PlaintextRenderable` | `ictr` | Wrappable text (deferred) |
-| `JsonTextualizer` | `ictr` | Structured logging output |
-| Linearizers (public) | `ictr` | For downstream use |
-| `TomlRenderable` | `appcore` | Config/CLI serialization |
-| CLI display logic | `appcore` | Format multiplexing |
+**Phase 2 - Protocols (Partial)**:
+- ✅ `DictionaryRenderable` protocol implemented in `ictr/renderables.py`
+- ✅ `MarkdownRenderable` protocol skeleton implemented (signature under review)
 
 ---
 
-## Renderable Protocols
+## Remaining Work
 
-### `DictionaryRenderable`
+### Open Questions for Appcore Validation
 
-Base protocol for objects that can represent themselves as dictionaries suitable for serialization.
-```python
-class DictionaryRenderable( __.typx.Protocol ):
-    '''Objects providing dictionary representation for serialization.'''
+1. **MarkdownRenderable signature**: Should it take `LinearizerState` instead of `colorize` and `columns_max`?
+   - Current: `render_as_markdown(colorize: bool, columns_max: Absential[int])`
+   - Proposed: `render_as_markdown(auxdata: Absential[LinearizerState])`
+   - Benefits: Access to incision boundaries, full configuration, consistency with linearizer APIs
 
-    def render_as_dictionary( self ) -> dict[ str, __.typx.Any ]:
-        '''Returns dictionary suitable for JSON/TOML serialization.
+2. **JsonRenderable necessity**: Do we need this as a protocol, or can appcore just use `DictionaryRenderable` + `json.dumps()`?
 
-        Implementations should:
-        - Exclude private attributes (``_`` prefix)
-        - Convert opaque identifiers appropriately
-        - Ensure all values are serializable
-        '''
-        ...
-```
+3. **Default Markdown renderer**: Should `colorize` parameter affect Markdown syntax (`**bold**`) or only terminal rendering?
+   - Decision: Emit clean Markdown always, let consumer handle rendering
 
-### `JsonRenderable`
+### Pending Implementation
 
-Extends `DictionaryRenderable` with custom JSON formatting control.
-```python
-class JsonRenderable( DictionaryRenderable, __.typx.Protocol ):
-    '''Objects providing custom JSON serialization.'''
+1. **Implement `_dictionary_to_markdown()` default renderer**
+   - Location: `ictr/renderables.py`
+   - Pattern: Convert dict to bullet list with nested structures
 
-    def render_as_json( self, compact: bool = False, indent: int = 2 ) -> str:
-        '''Returns JSON string representation.'''
-        # Default implementation available via inheritance
-        d = self.render_as_dictionary( )
-        if compact:
-            return __.json.dumps(
-                d, ensure_ascii = False, separators = ( ',', ':' ) )
-        return __.json.dumps( d, ensure_ascii = False, indent = indent )
-```
+2. **Add `JsonTextualizer` class** (if needed after appcore validation)
+   - Location: TBD (`ictr/textualizers.py` or `ictr/standard/compositors.py`)
+   - See design spec below
 
-### `MarkdownRenderable`
+3. **Update linearizers for protocol support**
+   - Location: `ictr/standard/linearizers.py`
+   - Add protocol checks to `linearize_omni_plain()` and `linearize_omni_rich()`
 
-For objects that render as atomic Markdown blocks (tables, code blocks, etc.) that should not be wrapped or modified.
-```python
-class MarkdownRenderable( __.typx.Protocol ):
-    '''Objects providing Markdown representation for terminal/log output.'''
+4. **Add public `linearize()` convenience function**
+   - Location: `ictr/__init__.py` or `ictr/standard/__init__.py`
+   - Simple wrapper around linearizer with sensible defaults
 
-    def render_as_markdown(
-        self,
-        colorize: bool = False,
-        columns_max: int | None = None,
-    ) -> str:
-        '''Returns Markdown string.
+## Design Specs for Pending Items
 
-        ``columns_max`` is advisory. Objects may use it to size tables
-        or wrap prose paragraphs, but atomic structures (tables, code
-        blocks) may exceed it. The textualizer will not further modify
-        the returned content.
+### `JsonTextualizer` (If Needed)
 
-        When ``colorize`` is True, objects may include ANSI sequences
-        or rely on Rich rendering downstream.
-        '''
-        ...
-```
+Textualizer producing JSON-formatted output for structured logging.
 
-### `PlaintextRenderable` (Deferred)
+**Key behaviors**:
+- Serialize `Record` objects to JSON
+- Use protocol resolution: `render_as_json()` → `render_as_dictionary()` → dataclass introspection → repr()
+- Support compact and pretty-printed modes
 
-For objects providing wrappable plain text. Deferred for future implementation.
-```python
-class PlaintextRenderable( __.typx.Protocol ):
-    '''Objects providing wrappable plain text representation.'''
+**Location**: TBD after appcore validation
+- Option A: `ictr/textualizers.py` (alongside other textualizers)
+- Option B: `ictr/standard/compositors.py` (as a compositor variant)
 
-    def render_as_plaintext( self ) -> str:
-        '''Returns plain text that may be wrapped by the textualizer.'''
-        ...
-```
+## Appcore Integration Patterns
 
----
+### Reusable ICTR Components
 
-## Linearizer Refactoring
+| Component | Purpose | Usage in Appcore |
+|-----------|---------|------------------|
+| `DictionaryRenderable` | Base serialization protocol | Result objects inherit for JSON/TOML export |
+| `MarkdownRenderable` | Structured markdown output | CLI display with Rich rendering |
+| `linearize()` | Object → text lines | Plain text output mode |
+| `LinearizerState` | Linearization context | Configuration for markdown/plain rendering |
+| `standard.Printer` | Stream output | Terminal/file output with color detection |
 
-### New Configuration Hierarchy
+### Example Display Pattern
 
-Factor `LinearizerConfiguration` out of `TextualizerConfiguration`:
-```python
-class LinearizerConfiguration( __.immut.DataclassObject ):
-    '''Configuration for linearization behavior.'''
-
-    exceptionscfg: ExceptionsConfiguration = __.dcls.field(
-        default_factory = ExceptionsConfiguration )
-    incision_boundary: IncisionBoundaries = IncisionBoundaries.Wordsplits
-```
-
-### `LinearizerState`
-
-Runtime state DTO for linearization, parallel to `TextualizerState`:
-```python
-class LinearizerState( __.immut.DataclassObject ):
-    '''Runtime state for linearization.'''
-
-    configuration: LinearizerConfiguration
-    control: TextualizerControl
-    colorize: bool
-    columns_max: Absential[ int ] = absent
-
-    @classmethod
-    def from_configuration(
-        cls,
-        configuration: LinearizerConfiguration | None = None,
-        control: TextualizerControl | None = None,
-    ) -> __.typx.Self:
-        if configuration is None:
-            configuration = LinearizerConfiguration( )
-        if control is None:
-            control = TextualizerControl( )
-        colorize = ENRICH and control.colorize
-        columns_max_ = control.columns_max
-        return cls(
-            configuration = configuration,
-            control = control,
-            colorize = colorize,
-            columns_max = absent if columns_max_ is None else columns_max_ )
-```
-
-### Updated `TextualizerConfiguration`
-```python
-class TextualizerConfiguration( __.immut.DataclassObject ):
-    '''Behaviors and format for text from standard textualizer.'''
-
-    linearizercfg: LinearizerConfiguration = __.dcls.field(
-        default_factory = LinearizerConfiguration )
-    colorize: bool = True
-    columns_constraint: ColumnsConstraints = ColumnsConstraints.Complect
-    columns_max: __.typx.Optional[ int ] = None
-    detail_prefix_initial: str = ''
-    detail_prefix_subsequent: __.typx.Optional[ str ] = None
-    details_separator: str = '\n\n'
-    line_prefix_initial: str = ''
-    line_prefix_subsequent: __.typx.Optional[ str ] = None
-    summary_incision_ratio: float = 0.3
-```
-
-### Updated `TextualizerState`
-
-Add method to derive `LinearizerState`:
-```python
-class TextualizerState( __.immut.DataclassObject ):
-    # ... existing fields ...
-
-    def as_linearizer_state( self ) -> LinearizerState:
-        '''Derives linearizer state from textualizer state.'''
-        return LinearizerState(
-            configuration = self.configuration.linearizercfg,
-            control = self.control,
-            colorize = self.colorize,
-            columns_max = self.columns_max )
-```
-
-### Public Linearization API
-```python
-def linearize(
-    obj: object,
-    configuration: LinearizerConfiguration | None = None,
-    control: TextualizerControl | None = None,
-) -> tuple[ str, ... ]:
-    '''Public API for linearizing objects to text lines.
-
-    Args:
-        obj: Object to linearize.
-        configuration: Linearization settings. Uses defaults if None.
-        control: Output context (colorization, columns). Uses defaults if None.
-
-    Returns:
-        Tuple of text lines.
-    '''
-    state = LinearizerState.from_configuration( configuration, control )
-    return linearize_omni( state, obj, state.columns_max )
-```
-
----
-
-## JSON Textualization
-
-### `JsonTextualizer`
-
-Textualizer that produces JSON-formatted output for structured logging:
-```python
-class JsonTextualizer( Textualizer ):
-    '''Textualizer producing JSON-formatted output.'''
-
-    compact: bool = False
-    indent: int = 2
-
-    def __call__(
-        self, control: TextualizerControl, record: Record
-    ) -> str:
-        data = {
-            'timestamp': record.ctime.isoformat( ),
-            'address': record.address,
-            'flavor': (
-                record.flavor if isinstance( record.flavor, str )
-                else f"trace{record.flavor}" ),
-            'content': self._serialize_content( record.content ),
-        }
-        if self.compact:
-            return __.json.dumps(
-                data, ensure_ascii = False, separators = ( ',', ':' ) )
-        return __.json.dumps(
-            data, ensure_ascii = False, indent = self.indent )
-
-    def _serialize_content( self, content: object ) -> Any:
-        '''Serializes content with protocol support.'''
-        if isinstance( content, MessageContent ):
-            return self._serialize_message_content( content )
-        return self._serialize_object( content )
-
-    def _serialize_object( self, obj: object ) -> Any:
-        '''Resolution order for object serialization.'''
-        # 1. Direct JSON control
-        if hasattr( obj, 'render_as_json' ):
-            return __.json.loads( obj.render_as_json( compact = True ) )
-
-        # 2. Dictionary representation
-        if hasattr( obj, 'render_as_dictionary' ):
-            return obj.render_as_dictionary( )
-
-        # 3. Dataclass introspection
-        if __.dcls.is_dataclass( obj ) and not isinstance( obj, type ):
-            return self._serialize_dataclass( obj )
-
-        # 4. Basic types
-        if isinstance( obj, ( str, int, float, bool, type( None ) ) ):
-            return obj
-        if isinstance( obj, ( list, tuple ) ):
-            return [ self._serialize_object( item ) for item in obj ]
-        if isinstance( obj, dict ):
-            return {
-                str( k ): self._serialize_object( v )
-                for k, v in obj.items( ) }
-
-        # 5. Fallback
-        return repr( obj )
-
-    def _serialize_dataclass( self, obj: object ) -> dict[ str, Any ]:
-        '''Serializes dataclass, excluding private fields.'''
-        result: dict[ str, Any ] = { }
-        for field in __.dcls.fields( obj ):
-            if field.name.startswith( '_' ): continue
-            value = getattr( obj, field.name )
-            result[ field.name ] = self._serialize_object( value )
-        return result
-```
-
----
-
-## Integration with `appcore`
-
-### Reusable Components
-
-`appcore` can reuse these `ictr` components for CLI display:
-
-| Component | Usage |
-|-----------|-------|
-| `Printer` protocol | Output abstraction |
-| `standard.Printer` | Concrete stream printer |
-| `TextualizerControl` | Colorization, column detection |
-| `produce_columns_max_calculator` | TTY column width |
-| `linearize()` | Object → text lines |
-| `LinearizerConfiguration` | Linearization settings |
-| `LinearizerState` | Runtime linearization context |
-
-### Display Pattern
 ```python
 # In appcore CLI code
 
 async def display(
-    obj: object,
+    obj: DictionaryRenderable,
     display_options: DisplayOptions,
     exits: AsyncExitStack,
 ) -> None:
     stream = await display_options.provide_stream( exits )
-    printer = ictr.standard.Printer(
-        target = stream,
-        force_color = display_options.assume_rich_terminal )
-    control = printer.provide_textualizer_control( ) or ictr.TextualizerControl( )
 
     match display_options.presentation:
         case Presentations.Json:
-            text = _render_json( obj )
+            text = json.dumps( obj.render_as_dictionary( ), indent = 2 )
         case Presentations.Toml:
-            text = _render_toml( obj )
+            text = tomli_w.dumps( obj.render_as_dictionary( ) )
         case Presentations.Markdown:
-            text = _render_markdown( obj, control )
+            # Option A: Simple signature
+            text = obj.render_as_markdown( )
+            # Option B: With LinearizerState
+            # state = LinearizerState.from_configuration( ... )
+            # text = obj.render_as_markdown( auxdata = state )
         case Presentations.Plain:
-            lines = ictr.linearize( obj, control = control )
+            lines = ictr.linearize( obj )
             text = '\n'.join( lines )
 
-    printer( text )
+    stream.write( text )
+    stream.write( '\n' )
 ```
 
-### `appcore`-Specific Protocols
+### Appcore-Specific Extensions
+
+Appcore can extend `ictr` protocols for format-specific needs:
+
 ```python
 # In appcore
 
 class TomlRenderable( ictr.DictionaryRenderable, __.typx.Protocol ):
-    '''Objects providing custom TOML serialization.'''
+    '''Objects providing TOML serialization.'''
 
     def render_as_toml( self ) -> str:
         '''Returns TOML string representation.'''
@@ -356,35 +130,25 @@ class TomlRenderable( ictr.DictionaryRenderable, __.typx.Protocol ):
 
 ---
 
-## Implementation Phases
+## Quick Reference
 
-### Phase 1: Pre-1.0 (Breaking Changes)
+### Protocol Resolution Order
 
-1. Factor `LinearizerConfiguration` from `TextualizerConfiguration`
-2. Add `LinearizerState` DTO
-3. Change linearizer signatures to use `LinearizerState`
-4. Add `as_linearizer_state()` to `TextualizerState`
-5. Export linearizers and configuration types publicly
+When serializing objects, use this fallback chain:
 
-### Phase 2: Post-1.0 (Additive)
+1. **Explicit protocol**: Check `isinstance(obj, DictionaryRenderable)` → call `render_as_dictionary()`
+2. **Dataclass introspection**: Check `dataclasses.is_dataclass(obj)` → extract fields (exclude `_` prefix)
+3. **Basic types**: `str`, `int`, `float`, `bool`, `None` → pass through
+4. **Collections**: `Sequence`, `Mapping` → recursively serialize elements
+5. **Fallback**: `repr(obj)` for unknown types
 
-1. Add `DictionaryRenderable` protocol
-2. Add `JsonRenderable` protocol
-3. Add `MarkdownRenderable` protocol
-4. Add `JsonTextualizer`
-5. Update linearizers to check for `render_as_*` methods
-6. Add public `linearize()` convenience function
-7. (Deferred) Add `PlaintextRenderable` protocol
+See `ictr/renderables.py:_serialize_value()` for implementation.
 
 ---
 
-## Summary
+## Next Steps
 
-This design:
-
-- Keeps `ictr` focused on terminal/log output
-- Provides clean protocols for objects to control their rendering
-- Exposes linearization as a public API for `appcore`
-- Maintains separation between textualizers (what) and printers (where)
-- Enables structured JSON logging
-- Minimizes breaking changes before 1.0
+1. **Validate from appcore**: Implement display logic in appcore CLI to validate design decisions
+2. **Refine signatures**: Update `MarkdownRenderable` based on real usage patterns
+3. **Complete implementation**: Finish remaining items after validation
+4. **Archive this document**: Move to historical notes once work is complete
