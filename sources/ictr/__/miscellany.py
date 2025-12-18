@@ -25,6 +25,10 @@
 from . import imports as __
 
 
+PROTOCOL_RTC_MUTABLES = (
+    '_is_runtime_protocol', '__non_callable_proto_members__' )
+
+
 def install_builtin_safely(
     alias: str, installee: __.typx.Any, errorclass: type[ Exception ]
 ) -> None:

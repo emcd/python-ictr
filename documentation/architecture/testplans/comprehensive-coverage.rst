@@ -233,8 +233,7 @@ FlavorSpecification component tests (100-199)
   Test 120: FlavorSpecification default values
 
 Standard flavors validation (200-299)
-  Test 200: Verify all standard flavors present (note, monition, error,
-           errorx, abort, abortx, future, success, advice)
+  Test 200: Verify all standard flavors present (note, monition, error, errorx, abort, abortx, future, success, advice)
   Test 210: Verify single-letter aliases (n, m, e, a, f, s, v)
   Test 220: Validate exception-capturing flavors (errorx, abortx have enable_exceptions)
 
@@ -552,8 +551,7 @@ Basic functionality tests (000-099)
   Test 010: Standard flavors include all required categories
 
 produce_flavors_standard tests (100-199)
-  Test 100: Produced flavors include note, monition, error, abort, future,
-           success, advice
+  Test 100: Produced flavors include note, monition, error, abort, future, success, advice
   Test 110: Produced flavors include errorx, abortx with exception capture
   Test 120: Produced flavors have correct specifications
   Test 130: Produced flavors with Rich integration

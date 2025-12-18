@@ -27,7 +27,11 @@ from . import printers as _printers
 from . import records as _records
 
 
-class Compositor( __.immut.DataclassProtocol, __.typx.Protocol ):
+@__.typx.runtime_checkable
+class Compositor(
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
+):
     ''' Abstract base class for compositors. '''
 
     @__.abc.abstractmethod
@@ -44,7 +48,11 @@ CompositorFactory: __.typx.TypeAlias = (
     __.typx.Callable[ [ str, _flavors.Flavor ], Compositor ] )
 
 
-class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
+@__.typx.runtime_checkable
+class Introducer(
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
+):
     ''' Abstract base class for introducers. '''
 
     @__.abc.abstractmethod
@@ -61,7 +69,11 @@ class Introducer( __.immut.DataclassProtocol, __.typx.Protocol ):
 IntroducerUnion: __.typx.TypeAlias = str | Introducer
 
 
-class Linearizer( __.immut.DataclassProtocol, __.typx.Protocol ):
+@__.typx.runtime_checkable
+class Linearizer(
+    __.immut.DataclassProtocol, __.typx.Protocol,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
+):
     ''' Abstract base class for linearizers. '''
 
     @__.abc.abstractmethod

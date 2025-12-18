@@ -26,14 +26,10 @@ import json as _json
 from . import __
 
 
-_PROTOCOL_RTC_MUTABLES = (
-    '_is_runtime_protocol', '__non_callable_proto_members__' )
-
-
 @__.typx.runtime_checkable
 class DictionaryRenderable(
     __.immut.Protocol, __.typx.Protocol,
-    class_mutables = _PROTOCOL_RTC_MUTABLES,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Objects which can be rendered into a dictionary. '''
 
@@ -45,7 +41,7 @@ class DictionaryRenderable(
 @__.typx.runtime_checkable
 class DictionaryRenderableDataclass(
     __.immut.DataclassProtocol, __.typx.Protocol,
-    class_mutables = _PROTOCOL_RTC_MUTABLES,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered into a dictionary. '''
 
@@ -57,7 +53,7 @@ class DictionaryRenderableDataclass(
 @__.typx.runtime_checkable
 class JsonRenderable(
     DictionaryRenderable, __.typx.Protocol,
-    class_mutables = _PROTOCOL_RTC_MUTABLES,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Objects which can be rendered as JSON. '''
 
@@ -73,7 +69,7 @@ class JsonRenderable(
 @__.typx.runtime_checkable
 class JsonRenderableDataclass(
     DictionaryRenderableDataclass, __.typx.Protocol,
-    class_mutables = _PROTOCOL_RTC_MUTABLES,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered as JSON. '''
 
@@ -89,7 +85,7 @@ class JsonRenderableDataclass(
 @__.typx.runtime_checkable
 class MarkdownRenderable(
     DictionaryRenderable, __.typx.Protocol,
-    class_mutables = _PROTOCOL_RTC_MUTABLES,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Objects which can be rendered as Markdown. '''
 
@@ -107,7 +103,7 @@ class MarkdownRenderable(
 @__.typx.runtime_checkable
 class MarkdownRenderableDataclass(
     DictionaryRenderableDataclass, __.typx.Protocol,
-    class_mutables = _PROTOCOL_RTC_MUTABLES,
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered as Markdown. '''
 

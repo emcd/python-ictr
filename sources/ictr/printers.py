@@ -76,9 +76,10 @@ class TextualizationControl( __.immut.DataclassObject ):
         return calculator( ) if callable( calculator ) else calculator
 
 
+@__.typx.runtime_checkable
 class Printer(
     __.immut.DataclassProtocol, __.typx.Protocol,
-    decorators = ( __.typx.runtime_checkable, ),
+    class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Abstract base class for printers. '''
 
