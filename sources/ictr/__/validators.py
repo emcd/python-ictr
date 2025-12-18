@@ -56,7 +56,7 @@ def validate_arguments(
     return decorate
 
 
-def _reduce_annotation(
+def _reduce_annotation(  # noqa: PLR0911
     annotation: __.typx.Any, globalvars: dict[ str, __.typx.Any ]
 ) -> tuple[ type, ... ]:
     if isinstance( annotation, str ):
@@ -69,7 +69,13 @@ def _reduce_annotation(
             map(
                 lambda a: _reduce_annotation( a, globalvars = globalvars ),
                 __.typx.get_args( annotation ) ) ) )
-    if origin is None: return ( annotation, )
+    if origin is None:
+        if annotation is __.typx.IO: return ( __.io.IOBase, )
+        if annotation is __.typx.TextIO: return ( __.io.TextIOBase, )
+        if annotation is __.typx.BinaryIO:
+            return ( __.io.RawIOBase, __.io.BufferedIOBase )
+        return ( annotation, )
+    if origin is __.typx.IO: return ( __.io.IOBase, )
     if origin is __.typx.Annotated:
         return _reduce_annotation(
             annotation.__origin__, globalvars = globalvars )

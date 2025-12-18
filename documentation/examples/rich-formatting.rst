@@ -43,7 +43,7 @@ If ``rich`` is installed, ``ictr`` will automatically use it for:
     def capture_factory( address, flavor ):
         ''' Printer that captures Rich-formatted output. '''
         from ictr.standard import Printer
-        return Printer( target = capture, force_color = True )
+        return Printer( target = capture, force_colorize = True )
 
     ictr = ictr.install( printer_factories = [ capture_factory ] )
 

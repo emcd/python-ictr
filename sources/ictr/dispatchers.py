@@ -599,6 +599,13 @@ def _discover_invoker_module_name( ) -> str:
     return name
 
 
+def _is_text_stream(
+    factory: _printers.PrinterFactoryUnion
+) -> __.typx.TypeIs[ __.typx.TextIO ]:
+    ''' Runtime check for text streams (type guard for static analysis). '''
+    return isinstance( factory, __.io.TextIOBase )
+
+
 def _iterate_address_ancestry( name: str ) -> __.cabc.Iterator[ str ]:
     parts = name.split( '.' )
     for i in range( len( parts ) ):
@@ -651,7 +658,7 @@ def _resolve_printer(
     flavor: _flavors.Flavor,
 ) -> _printers.Printer:
     from .standard import Printer
-    if isinstance( factory, __.io.TextIOBase ):
+    if _is_text_stream( factory ):
         return Printer( target = factory )
     return factory( address, flavor )
 

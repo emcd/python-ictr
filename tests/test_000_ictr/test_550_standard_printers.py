@@ -35,7 +35,7 @@ class Test_000_Printer:
         target = MagicMock( spec = io.TextIOBase )
         printer = _printers.Printer( target = target )
         assert printer.target is target
-        assert printer.force_color is False
+        assert printer.force_colorize is False
 
     def test_100_call_writes_to_target( self ):
         ''' __call__ writes text to target. '''
@@ -44,16 +44,16 @@ class Test_000_Printer:
         # Mock isatty to False to avoid colorization check issues if any
         # But StringIO doesn't have isatty by default, need to check code.
         # Code calls target.isatty().
-        
+
         # We can't easily set isatty on StringIO instance in a way that
         # Printer logic expects unless we subclass or mock.
-        
+
         target = MagicMock( spec = io.TextIOBase )
         target.isatty.return_value = False
-        
+
         printer = _printers.Printer( target = target )
         printer( "message" )
-        
+
         # print( text, file=target ) calls target.write()
         target.write.assert_called()
         # print calls write multiple times (content then newline)
@@ -65,10 +65,10 @@ class Test_000_Printer:
         target = MagicMock( spec = io.TextIOBase )
         target.isatty.return_value = False
         printer = _printers.Printer( target = target )
-        
+
         record = MagicMock()
         record.__str__.return_value = "record_str"
-        
+
         printer( record )
         target.write.assert_called()
         calls = [args[0] for args, _ in target.write.call_args_list]
@@ -80,15 +80,15 @@ class Test_000_Printer:
         target.isatty.return_value = True
         target.encoding = 'utf-8'
         target.fileno.return_value = 1
-        
+
         printer = _printers.Printer( target = target )
-        
+
         with (
             patch( 'os.isatty', return_value = True ),
             patch( 'shutil.get_terminal_size' ) as mock_size
         ):
             mock_size.return_value.columns = 80
-            
+
             ctrl = printer.provide_textualization_control()
             assert ctrl.colorize is True
             assert ctrl.charset == 'utf-8'
@@ -100,7 +100,7 @@ class Test_000_Printer:
         target.isatty.return_value = True
         printer = _printers.Printer( target = target )
         assert printer._determine_colorization() is True
-        
+
         target.isatty.return_value = False
         assert printer._determine_colorization() is False
 
@@ -109,7 +109,7 @@ class Test_000_Printer:
         target = MagicMock( spec = io.TextIOBase )
         target.isatty.return_value = True
         printer = _printers.Printer( target = target )
-        
+
         with patch( 'os.environ.get', return_value = '1' ):
             assert printer._determine_colorization() is False
 
@@ -117,8 +117,8 @@ class Test_000_Printer:
         ''' force_color overrides NO_COLOR and tty. '''
         target = MagicMock( spec = io.TextIOBase )
         target.isatty.return_value = False
-        printer = _printers.Printer( target = target, force_color = True )
-        
+        printer = _printers.Printer( target = target, force_colorize = True )
+
         with patch( 'os.environ.get', return_value = '1' ):
             assert printer._determine_colorization() is True
 
@@ -127,10 +127,10 @@ class Test_000_Printer:
         target = MagicMock( spec = io.TextIOBase )
         target.isatty.return_value = False
         printer = _printers.Printer( target = target )
-        
+
         ansi_text = "\x1b[31mRed\x1b[0m"
         printer( ansi_text )
-        
+
         target.write.assert_called()
         calls = [args[0] for args, _ in target.write.call_args_list]
         combined = "".join(calls)

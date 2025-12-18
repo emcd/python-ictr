@@ -101,7 +101,7 @@ class Printer(
 Printers: __.typx.TypeAlias = __.cabc.Sequence[ Printer ]
 PrinterFactory: __.typx.TypeAlias = (
     __.cabc.Callable[ [ str, _flavors.Flavor ], Printer ] )
-PrinterFactoryUnion: __.typx.TypeAlias = __.io.TextIOBase | PrinterFactory
+PrinterFactoryUnion: __.typx.TypeAlias = __.typx.TextIO | PrinterFactory
 PrinterFactoriesUnion: __.typx.TypeAlias = (
     __.cabc.Sequence[ PrinterFactoryUnion ] )
 
@@ -123,7 +123,7 @@ def remove_ansi_c1_sequences( text: str ) -> str:
 
 @_validate_arguments
 def produce_columns_max_calculator(
-    target: __.io.TextIOBase
+    target: __.typx.TextIO
 ) -> ColumnsMaxCalculator:
     fileno_revealer = getattr( target, 'fileno', None )
     if fileno_revealer is None: return None
@@ -141,8 +141,8 @@ def produce_columns_max_calculator(
 
 @_validate_arguments
 def produce_printer_factory_default(
-    target: __.io.TextIOBase,
-    force_color: bool = False,
+    target: __.typx.TextIO,
+    force_colorize: bool = False,
 ) -> PrinterFactory:
     ''' Produces default printer factory associated with a stream.
 
@@ -153,12 +153,13 @@ def produce_printer_factory_default(
         from .standard import Printer
         match __.sys.platform:
             case 'win32':
-                winansi = _colorama.AnsiToWin32( target ) # pyright: ignore
+                winansi = _colorama.AnsiToWin32( target )
                 target_ = ( # pragma: no cover
-                    winansi.stream if winansi.convert else target )
+                    __.typx.cast( __.typx.TextIO, winansi.stream )
+                    if winansi.convert else target )
             case _: target_ = target
         return Printer(
-            target = target_, force_color = force_color ) # pyright: ignore
+            target = target_, force_colorize = force_colorize )
 
     return produce_printer
 
