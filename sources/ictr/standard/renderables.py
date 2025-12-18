@@ -24,6 +24,7 @@
 import json as _json
 
 from . import __
+from . import core as _core
 
 
 @__.typx.runtime_checkable
@@ -90,14 +91,11 @@ class MarkdownRenderable(
     ''' Objects which can be rendered as Markdown. '''
 
     def render_as_markdown(
-        self, /, *,
-        colorize: bool = False,
-        columns_max: __.Absential[ int ] = __.absent,
+        self, /, *, linearizer: _core.LinearizerState
     ) -> str:
         ''' Returns Markdown string representation. '''
         dictionary = self.render_as_dictionary( )
-        return _dictionary_to_markdown(
-            dictionary, colorize = colorize, columns_max = columns_max )
+        return _ultimate_to_markdown( dictionary, linearizer )
 
 
 @__.typx.runtime_checkable
@@ -108,14 +106,11 @@ class MarkdownRenderableDataclass(
     ''' Dataclass objects which can be rendered as Markdown. '''
 
     def render_as_markdown(
-        self, /, *,
-        colorize: bool = False,
-        columns_max: __.Absential[ int ] = __.absent,
+        self, /, *, linearizer: _core.LinearizerState
     ) -> str:
         ''' Returns Markdown string representation. '''
         dictionary = self.render_as_dictionary( )
-        return _dictionary_to_markdown(
-            dictionary, colorize = colorize, columns_max = columns_max )
+        return _ultimate_to_markdown( dictionary, linearizer )
 
 
 def render_as_dictionary( entity: object ) -> dict[ str, __.typx.Any ]:
@@ -137,7 +132,7 @@ def render_as_dictionary( entity: object ) -> dict[ str, __.typx.Any ]:
 
 
 def _dictionary_to_json(
-    dictionary: dict[ str, __.typx.Any ], /, *,
+    dictionary: dict[ str, __.typx.Any ],
     compact: bool = False, indent: int = 2,
 ) -> str:
     ''' Returns JSON string representation. '''
@@ -147,14 +142,78 @@ def _dictionary_to_json(
     return _json.dumps( dictionary, ensure_ascii = False, indent = indent )
 
 
-def _dictionary_to_markdown(
-    dictionary: dict[ str, __.typx.Any ], /, *,
-    colorize: bool = False,
-    columns_max: __.Absential[ int ] = __.absent,
+def _dictionary_to_markdown_lines(
+    dictionary: __.cabc.Mapping[ __.typx.Any, __.typx.Any ],
+    auxdata: _core.LinearizerState,
+    level: int = 0,
+) -> tuple[ str, ... ]:
+    lines: list[ str ] = [ ]
+    prefix = ' ' * level * 4 + '- '
+    level += 1
+    for name, value in dictionary.items( ):
+        name_ = f"**{name}**"
+        if value is None:
+            lines.append( f"{prefix}{name_}: (none)" )
+        elif isinstance( value, ( bool, int, float, str ) ):
+            lines.append( f"{prefix}{name_}: {value}" )
+        elif isinstance( value, __.cabc.Sequence ):
+            lines.append( f"{prefix}{name_}:" )
+            lines.extend( _sequence_to_markdown_lines(
+                __.typx.cast( __.cabc.Sequence[ __.typx.Any ], value ),
+                auxdata, level = level ) )
+        elif isinstance( value, __.cabc.Mapping ):
+            lines.append( f"{prefix}{name_}:" )
+            lines.extend( _dictionary_to_markdown_lines(
+                __.typx.cast(
+                    __.cabc.Mapping[ __.typx.Any, __.typx.Any ], value ),
+                auxdata, level ) )
+        else: lines.append( f"{prefix}{name_}: {value}" )
+    return tuple( lines )
+
+
+def _sequence_to_markdown_lines(
+    sequence: __.cabc.Sequence[ __.typx.Any ],
+    auxdata: _core.LinearizerState,
+    level: int = 0,
+) -> tuple[ str, ... ]:
+    lines: list[ str ] = [ ]
+    prefix = ' ' * level * 4 + '- '
+    level += 1
+    for element in sequence:
+        if element is None:
+            lines.append( f"{prefix}(none)" )
+        elif isinstance( element, __.cabc.Sequence ):
+            lines.append( prefix )
+            lines.extend( _sequence_to_markdown_lines(
+                __.typx.cast( __.cabc.Sequence[ __.typx.Any ], element ),
+                auxdata, level = level ) )
+        elif isinstance( element, __.cabc.Mapping ):
+            lines.append( prefix )
+            lines.extend( _dictionary_to_markdown_lines(
+                __.typx.cast(
+                    __.cabc.Mapping[ __.typx.Any, __.typx.Any ], element ),
+                auxdata, level = level ) )
+        else: lines.append( f"{prefix}{element}" )
+    return tuple( lines )
+
+
+def _ultimate_to_markdown(
+    dictionary: dict[ str, __.typx.Any ],
+    auxdata: _core.LinearizerState,
+    level: int = 0,
 ) -> str:
     ''' Returns Markdown string representation. '''
-    # TODO: Default implementation.
-    raise NotImplementedError
+    lines = _dictionary_to_markdown_lines( dictionary, auxdata, level = level )
+    markdown = '\n'.join( lines )
+    if auxdata.colorize:
+        # TODO? Parse colors from result.
+        #       markdown_c = __.rich_text.Text.from_ansi( markdown )
+        capture = __.io.StringIO( )
+        console = __.produce_rich_console(
+            auxdata.control, capture, auxdata.columns_max )
+        console.print( __.rich_markdown.Markdown( markdown ) )
+        return capture.getvalue( )
+    return markdown
 
 
 def _serialize_value( value: __.typx.Any ) -> __.typx.Any:

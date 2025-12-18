@@ -1,8 +1,6 @@
-# Code Snippets for Textualizer Implementation
+# Code Snippets for Implementation
 
-**Date**: 2025-11-08
-
-This document contains implementation snippets discussed during textualizer development.
+This document contains implementation snippets discussed during development.
 
 ## Visual Width Truncation
 
@@ -113,3 +111,69 @@ def _render_exception_group_details(
 
     return tuple(details)
 ```
+
+---
+
+## Dictionary to Markdown Renderer
+
+Default implementation for converting dictionaries to Markdown format:
+
+```python
+def _dictionary_to_markdown(
+    dictionary: dict[ str, __.typx.Any ], /, *,
+    colorize: bool = False,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> str:
+    ''' Returns Markdown string representation.
+
+        Converts dictionary to structured Markdown with:
+        - Top-level keys as bullet list items
+        - Nested dictionaries as indented sublists
+        - Lists as bullet points
+        - Scalars as inline values
+
+        Note: colorize parameter currently unused - Markdown syntax
+        (**bold**, etc.) is always emitted. Terminal rendering is
+        separate from Markdown generation.
+    '''
+    lines: list[ str ] = [ ]
+
+    for key, value in dictionary.items( ):
+        # Format key with bold markdown
+        key_formatted = f"**{key}**"
+
+        # Handle different value types
+        if value is None:
+            lines.append( f"- {key_formatted}: (none)" )
+        elif isinstance( value, bool ):
+            lines.append( f"- {key_formatted}: {value}" )
+        elif isinstance( value, ( str, int, float ) ):
+            lines.append( f"- {key_formatted}: {value}" )
+        elif isinstance( value, ( list, tuple ) ):
+            lines.append( f"- {key_formatted}:" )
+            for item in value:
+                if isinstance( item, dict ):
+                    # Nested dict in list - render inline or as sub-items
+                    lines.append( f"  - {item}" )
+                else:
+                    lines.append( f"  - {item}" )
+        elif isinstance( value, dict ):
+            lines.append( f"- {key_formatted}:" )
+            # Recursively render nested dict with indentation
+            nested_md = _dictionary_to_markdown(
+                value, colorize = colorize, columns_max = columns_max )
+            for nested_line in nested_md.split( '\n' ):
+                if nested_line.strip( ):
+                    lines.append( f"  {nested_line}" )
+        else:
+            # Fallback for unknown types
+            lines.append( f"- {key_formatted}: {value}" )
+
+    return '\n'.join( lines )
+```
+
+**Usage notes:**
+- Emits clean Markdown syntax regardless of `colorize` setting
+- Preserves nested structure with indentation
+- Simple bullet list format suitable for terminal display
+- Can be customized per-object by implementing `MarkdownRenderable`
