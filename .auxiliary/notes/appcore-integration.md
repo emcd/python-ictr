@@ -1,88 +1,217 @@
-# ICTR Renderables Integration - Remaining Work
+# ICTR Renderables Integration
 
 ## Overview
 
-This document tracks remaining work for `ictr` renderables integration with `appcore`.
+This document tracks the design and remaining work for `ictr` renderables integration with `appcore`.
 
 **Goal**: Enable objects to control their rendering through protocols, supporting CLI display needs while keeping `ictr` focused on terminal/log output.
 
-**Status**: Phase 1 complete (linearizers refactored and exported). Phase 2 in progress (protocols partially implemented, pending appcore validation).
+**Status**: Phase 2 in progress. Protocols implemented, now designing presentation dispatch system.
+
+---
 
 ## Current Status
 
-### ✅ Completed (as of 1.0a1)
+### ✅ Completed
 
 **Phase 1 - Linearizer Refactoring**:
 - `LinearizerConfiguration` and `LinearizerState` implemented
 - `CompositorState` refactored to compose `LinearizerState`
 - Linearizers exported publicly from `ictr.standard`
 
-**Phase 2 - Protocols (Partial)**:
-- ✅ `DictionaryRenderable` protocol implemented in `ictr/renderables.py`
-- ✅ `MarkdownRenderable` protocol skeleton implemented (signature under review)
+**Phase 2 - Protocols**:
+- ✅ `DictionaryRenderable` protocol with default `render_as_dictionary()`
+- ✅ `JsonRenderable` protocol with default `render_as_json()`
+- ✅ `MarkdownRenderable` protocol with `render_as_markdown(linearizer=...)`
+- ✅ Default markdown renderer (`_render_as_markdown()`) with Rich integration
+- ✅ Moved renderables to `ictr.standard` (concrete implementations)
+
+**Resolved Design Decisions**:
+- `MarkdownRenderable.render_as_markdown()` takes `LinearizerState` (not separate params)
+- Markdown syntax always emitted; colorization handled by Rich at render time
+- 2-space indentation for nested markdown structures
 
 ---
 
-## Remaining Work
+## Architecture: PresentationConfiguration
 
-### Open Questions for Appcore Validation
+### Problem Statement
 
-1. **MarkdownRenderable signature**: Should it take `LinearizerState` instead of `colorize` and `columns_max`?
-   - Current: `render_as_markdown(colorize: bool, columns_max: Absential[int])`
-   - Proposed: `render_as_markdown(auxdata: Absential[LinearizerState])`
-   - Benefits: Access to incision boundaries, full configuration, consistency with linearizer APIs
+During linearization, objects may support multiple renderable protocols (e.g., both `MarkdownRenderable` and `JsonRenderable`). We need:
 
-2. **JsonRenderable necessity**: Do we need this as a protocol, or can appcore just use `DictionaryRenderable` + `json.dumps()`?
+1. A way to specify preferred presentation mode via `LinearizerState`
+2. Extensibility for future formats (TOML, RST, Djot, etc.) without enum changes
+3. Per-renderer configuration (e.g., JSON `compact`, `indent`)
 
-3. **Default Markdown renderer**: Should `colorize` parameter affect Markdown syntax (`**bold**`) or only terminal rendering?
-   - Decision: Emit clean Markdown always, let consumer handle rendering
+### Solution: Strategy Pattern with Configuration
 
-### Pending Implementation
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      LinearizerConfiguration                     │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              presentation: PresentationConfiguration     │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   PresentationConfiguration (ABC)                │
+│  ┌──────────────────────┐  ┌──────────────────────────────┐     │
+│  │ matches(obj) -> bool │  │ render(obj, auxdata) -> lines│     │
+│  └──────────────────────┘  └──────────────────────────────┘     │
+└─────────────────────────────────────────────────────────────────┘
+           ▲                    ▲                    ▲
+           │                    │                    │
+┌──────────┴───────┐ ┌─────────┴────────┐ ┌────────┴─────────┐
+│ PlaintextPresent │ │ MarkdownPresent  │ │   JsonPresent    │
+│   Configuration  │ │  Configuration   │ │  Configuration   │
+├──────────────────┤ ├──────────────────┤ ├──────────────────┤
+│ (default)        │ │                  │ │ compact: bool    │
+│                  │ │                  │ │ indent: int      │
+├──────────────────┤ ├──────────────────┤ ├──────────────────┤
+│ matches:         │ │ matches:         │ │ matches:         │
+│  PlaintextRender │ │  MarkdownRender  │ │  JsonRenderable  │
+│  or fallback     │ │  or fallback     │ │  or fallback     │
+├──────────────────┤ ├──────────────────┤ ├──────────────────┤
+│ render:          │ │ render:          │ │ render:          │
+│  linearize_omni  │ │  render_as_md()  │ │  render_as_json()│
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+```
 
-1. **Implement `_dictionary_to_markdown()` default renderer**
-   - Location: `ictr/renderables.py`
-   - Pattern: Convert dict to bullet list with nested structures
+### Class Hierarchy
 
-2. **Add `JsonTextualizer` class** (if needed after appcore validation)
-   - Location: TBD (`ictr/textualizers.py` or `ictr/standard/compositors.py`)
-   - See design spec below
+```python
+class PresentationConfiguration( __.immut.DataclassObject, __.abc.ABC ):
+    '''Base configuration for presentation-specific rendering.'''
 
-3. **Update linearizers for protocol support**
-   - Location: `ictr/standard/linearizers.py`
-   - Add protocol checks to `linearize_omni_plain()` and `linearize_omni_rich()`
+    @__.abc.abstractmethod
+    def matches( self, obj: object ) -> bool:
+        '''Check if object supports this presentation mode.'''
+        ...
 
-4. **Add public `linearize()` convenience function**
-   - Location: `ictr/__init__.py` or `ictr/standard/__init__.py`
-   - Simple wrapper around linearizer with sensible defaults
+    @__.abc.abstractmethod
+    def render(
+        self, obj: object, auxdata: LinearizerState
+    ) -> tuple[ str, ... ]:
+        '''Render object using this presentation mode.
 
-## Design Specs for Pending Items
+        Returns tuple of lines. Falls back to default linearization
+        if object doesn't support the specific protocol.
+        '''
+        ...
 
-### `JsonTextualizer` (If Needed)
 
-Textualizer producing JSON-formatted output for structured logging.
+class PlaintextPresentationConfiguration( PresentationConfiguration ):
+    '''Default presentation using standard linearization.'''
 
-**Key behaviors**:
-- Serialize `Record` objects to JSON
-- Use protocol resolution: `render_as_json()` → `render_as_dictionary()` → dataclass introspection → repr()
-- Support compact and pretty-printed modes
+    def matches( self, obj: object ) -> bool:
+        # Could check for PlaintextRenderable if we add it later
+        return True  # Always matches as fallback
 
-**Location**: TBD after appcore validation
-- Option A: `ictr/textualizers.py` (alongside other textualizers)
-- Option B: `ictr/standard/compositors.py` (as a compositor variant)
+    def render(
+        self, obj: object, auxdata: LinearizerState
+    ) -> tuple[ str, ... ]:
+        # Check for PlaintextRenderable first (future)
+        # if isinstance( obj, PlaintextRenderable ):
+        #     text = obj.render_as_plaintext()
+        #     return tuple( text.split( '\n' ) )
+        return linearize_omni( auxdata, obj, auxdata.columns_max )
 
-## Appcore Integration Patterns
 
-### Reusable ICTR Components
+class JsonPresentationConfiguration( PresentationConfiguration ):
+    '''JSON presentation with formatting options.'''
 
-| Component | Purpose | Usage in Appcore |
-|-----------|---------|------------------|
-| `DictionaryRenderable` | Base serialization protocol | Result objects inherit for JSON/TOML export |
-| `MarkdownRenderable` | Structured markdown output | CLI display with Rich rendering |
-| `linearize()` | Object → text lines | Plain text output mode |
-| `LinearizerState` | Linearization context | Configuration for markdown/plain rendering |
-| `standard.Printer` | Stream output | Terminal/file output with color detection |
+    compact: bool = False
+    indent: int = 2
 
-### Example Display Pattern
+    def matches( self, obj: object ) -> bool:
+        return isinstance( obj, JsonRenderable )
+
+    def render(
+        self, obj: object, auxdata: LinearizerState
+    ) -> tuple[ str, ... ]:
+        if isinstance( obj, JsonRenderable ):
+            text = obj.render_as_json(
+                compact = self.compact, indent = self.indent )
+            return tuple( text.split( '\n' ) )
+        # Fallback to default linearization
+        return linearize_omni( auxdata, obj, auxdata.columns_max )
+
+
+class MarkdownPresentationConfiguration( PresentationConfiguration ):
+    '''Markdown presentation with Rich rendering support.'''
+
+    def matches( self, obj: object ) -> bool:
+        return isinstance( obj, MarkdownRenderable )
+
+    def render(
+        self, obj: object, auxdata: LinearizerState
+    ) -> tuple[ str, ... ]:
+        if isinstance( obj, MarkdownRenderable ):
+            text = obj.render_as_markdown( linearizer = auxdata )
+            return tuple( text.split( '\n' ) )
+        # Fallback to default linearization
+        return linearize_omni( auxdata, obj, auxdata.columns_max )
+```
+
+### Integration with LinearizerConfiguration
+
+```python
+class LinearizerConfiguration( __.immut.DataclassObject ):
+    '''Behaviors for standard textual linearizer.'''
+
+    # ... existing fields ...
+
+    presentation: PresentationConfiguration = __.dcls.field(
+        default_factory = PlaintextPresentationConfiguration )
+```
+
+### Linearizer Integration
+
+```python
+def linearize_omni(
+    auxdata: LinearizerState,
+    entity: object,
+    columns_max: __.Absential[ int ] = __.absent,
+) -> tuple[ str, ... ]:
+    # Check if presentation config handles this object
+    presentation = auxdata.configuration.presentation
+    if presentation.matches( entity ):
+        return presentation.render( entity, auxdata )
+
+    # Existing fallback chain
+    if auxdata.colorize:
+        return linearize_omni_rich( auxdata, entity, columns_max )
+    return linearize_omni_plain( auxdata, entity, columns_max )
+```
+
+---
+
+## Remaining Implementation
+
+1. **Implement `PresentationConfiguration` base class**
+   - Location: `ictr/standard/core.py`
+   - ABC with `matches()` and `render()` methods
+
+2. **Implement presentation subclasses**
+   - `PlaintextPresentationConfiguration` (default)
+   - `MarkdownPresentationConfiguration`
+   - `JsonPresentationConfiguration`
+
+3. **Update `LinearizerConfiguration`**
+   - Add `presentation` field with default
+
+4. **Update `linearize_omni()`**
+   - Check presentation config before type-based dispatch
+
+5. **Add public `linearize()` convenience function**
+   - Simple wrapper with sensible defaults
+
+---
+
+## Appcore Integration Pattern
+
+With PresentationConfiguration, appcore can select presentation mode:
 
 ```python
 # In appcore CLI code
@@ -92,40 +221,28 @@ async def display(
     display_options: DisplayOptions,
     exits: AsyncExitStack,
 ) -> None:
-    stream = await display_options.provide_stream( exits )
-
+    # Select presentation configuration based on user choice
     match display_options.presentation:
         case Presentations.Json:
-            text = json.dumps( obj.render_as_dictionary( ), indent = 2 )
-        case Presentations.Toml:
-            text = tomli_w.dumps( obj.render_as_dictionary( ) )
+            presentation = ictr.standard.JsonPresentationConfiguration(
+                compact = display_options.compact,
+                indent = display_options.indent )
         case Presentations.Markdown:
-            # Option A: Simple signature
-            text = obj.render_as_markdown( )
-            # Option B: With LinearizerState
-            # state = LinearizerState.from_configuration( ... )
-            # text = obj.render_as_markdown( auxdata = state )
-        case Presentations.Plain:
-            lines = ictr.linearize( obj )
-            text = '\n'.join( lines )
+            presentation = ictr.standard.MarkdownPresentationConfiguration()
+        case _:
+            presentation = ictr.standard.PlaintextPresentationConfiguration()
+
+    # Create linearizer with presentation config
+    config = ictr.standard.LinearizerConfiguration( presentation = presentation )
+    control = printer.provide_textualization_control()
+    auxdata = ictr.standard.LinearizerState.from_configuration( config, control )
+
+    # Render
+    lines = ictr.standard.linearize_omni( auxdata, obj )
+    text = '\n'.join( lines )
 
     stream.write( text )
     stream.write( '\n' )
-```
-
-### Appcore-Specific Extensions
-
-Appcore can extend `ictr` protocols for format-specific needs:
-
-```python
-# In appcore
-
-class TomlRenderable( ictr.DictionaryRenderable, __.typx.Protocol ):
-    '''Objects providing TOML serialization.'''
-
-    def render_as_toml( self ) -> str:
-        '''Returns TOML string representation.'''
-        return tomli_w.dumps( self.render_as_dictionary( ) )
 ```
 
 ---
@@ -134,21 +251,24 @@ class TomlRenderable( ictr.DictionaryRenderable, __.typx.Protocol ):
 
 ### Protocol Resolution Order
 
-When serializing objects, use this fallback chain:
+1. **Presentation config**: `presentation.matches(obj)` → `presentation.render(obj, auxdata)`
+2. **String**: Direct text linearization
+3. **Exception**: Traceback rendering
+4. **Other objects**: Pretty-print fallback
 
-1. **Explicit protocol**: Check `isinstance(obj, DictionaryRenderable)` → call `render_as_dictionary()`
-2. **Dataclass introspection**: Check `dataclasses.is_dataclass(obj)` → extract fields (exclude `_` prefix)
-3. **Basic types**: `str`, `int`, `float`, `bool`, `None` → pass through
-4. **Collections**: `Sequence`, `Mapping` → recursively serialize elements
-5. **Fallback**: `repr(obj)` for unknown types
+### Renderable Protocols
 
-See `ictr/renderables.py:_serialize_value()` for implementation.
+| Protocol | Method | Purpose |
+|----------|--------|---------|
+| `DictionaryRenderable` | `render_as_dictionary()` | Base for serialization |
+| `JsonRenderable` | `render_as_json(compact, indent)` | JSON with options |
+| `MarkdownRenderable` | `render_as_markdown(linearizer)` | Markdown with Rich |
+| `PlaintextRenderable` | `render_as_plaintext()` | (Future) Plain text |
 
----
+### File Locations
 
-## Next Steps
-
-1. **Validate from appcore**: Implement display logic in appcore CLI to validate design decisions
-2. **Refine signatures**: Update `MarkdownRenderable` based on real usage patterns
-3. **Complete implementation**: Finish remaining items after validation
-4. **Archive this document**: Move to historical notes once work is complete
+| Component | Location |
+|-----------|----------|
+| Renderable protocols | `ictr/standard/renderables.py` |
+| PresentationConfiguration | `ictr/standard/core.py` |
+| Linearizers | `ictr/standard/linearizers.py` |
