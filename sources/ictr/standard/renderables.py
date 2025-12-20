@@ -18,13 +18,13 @@
 #============================================================================#
 
 
-''' Protocols for renderable objects. '''
+''' Protocols and default implementations for renderable objects. '''
 
 
 import json as _json
 
 from . import __
-from . import core as _core
+from . import linearizers as _linearizers
 
 
 @__.typx.runtime_checkable
@@ -59,7 +59,10 @@ class JsonRenderable(
     ''' Objects which can be rendered as JSON. '''
 
     def render_as_json(
-        self, /, *, compact: bool = False, indent: int = 2
+        self,
+        auxdata: _linearizers.LinearizerState, /, *,
+        compact: bool = False,
+        indent: int = 2,
     ) -> str:
         ''' Returns JSON string representation. '''
         dictionary = self.render_as_dictionary( )
@@ -75,7 +78,10 @@ class JsonRenderableDataclass(
     ''' Dataclass objects which can be rendered as JSON. '''
 
     def render_as_json(
-        self, /, *, compact: bool = False, indent: int = 2
+        self,
+        auxdata: _linearizers.LinearizerState, /, *,
+        compact: bool = False,
+        indent: int = 2,
     ) -> str:
         ''' Returns JSON string representation. '''
         dictionary = self.render_as_dictionary( )
@@ -91,11 +97,11 @@ class MarkdownRenderable(
     ''' Objects which can be rendered as Markdown. '''
 
     def render_as_markdown(
-        self, /, *, linearizer: _core.LinearizerState
+        self, auxdata: _linearizers.LinearizerState, /
     ) -> str:
         ''' Returns Markdown string representation. '''
         dictionary = self.render_as_dictionary( )
-        return _render_as_markdown( dictionary, linearizer )
+        return _render_as_markdown( dictionary, auxdata )
 
 
 @__.typx.runtime_checkable
@@ -106,11 +112,11 @@ class MarkdownRenderableDataclass(
     ''' Dataclass objects which can be rendered as Markdown. '''
 
     def render_as_markdown(
-        self, /, *, linearizer: _core.LinearizerState
+        self, auxdata: _linearizers.LinearizerState, /
     ) -> str:
         ''' Returns Markdown string representation. '''
         dictionary = self.render_as_dictionary( )
-        return _render_as_markdown( dictionary, linearizer )
+        return _render_as_markdown( dictionary, auxdata )
 
 
 def render_as_dictionary( entity: object ) -> dict[ str, __.typx.Any ]:
@@ -133,7 +139,7 @@ def render_as_dictionary( entity: object ) -> dict[ str, __.typx.Any ]:
 
 def _dictionary_to_markdown_lines(
     dictionary: __.cabc.Mapping[ __.typx.Any, __.typx.Any ],
-    auxdata: _core.LinearizerState,
+    auxdata: _linearizers.LinearizerState,
     level: int = 0,
 ) -> tuple[ str, ... ]:
     lines: list[ str ] = [ ]
@@ -175,7 +181,7 @@ def _render_as_json(
 
 def _render_as_markdown(
     dictionary: dict[ str, __.typx.Any ],
-    auxdata: _core.LinearizerState,
+    auxdata: _linearizers.LinearizerState,
     level: int = 0,
 ) -> str:
     ''' Returns Markdown string representation. '''
@@ -194,7 +200,7 @@ def _render_as_markdown(
 
 def _sequence_to_markdown_lines(
     sequence: __.cabc.Sequence[ __.typx.Any ],
-    auxdata: _core.LinearizerState,
+    auxdata: _linearizers.LinearizerState,
     level: int = 0,
 ) -> tuple[ str, ... ]:
     lines: list[ str ] = [ ]

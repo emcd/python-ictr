@@ -59,3 +59,8 @@ MarkdownRenderable
 render_as_markdown
 MarkdownRenderableDataclass
 render_as_markdown
+
+PlaintextPresentation
+JsonPresentation
+MarkdownPresentation
+is_renderable

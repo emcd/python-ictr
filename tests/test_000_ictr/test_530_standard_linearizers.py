@@ -35,20 +35,18 @@ from ictr.standard import linearizers as _linearizers
 def make_auxdata(
     colorize = False, columns_max = absent, exceptionscfg = None
 ):
-    config = _core.LinearizerConfiguration()
+    config = _linearizers.LinearizerConfiguration( )
     if exceptionscfg:
-        config = _core.LinearizerConfiguration( exceptionscfg = exceptionscfg )
-        
+        config = _linearizers.LinearizerConfiguration(
+            exceptionscfg = exceptionscfg )
     control = MagicMock( spec = _printers.TextualizationControl )
     control.colorize = colorize
     control.columns_max = ( None if columns_max is absent else columns_max )
-    
-    return _core.LinearizerState(
+    return _linearizers.LinearizerState(
         configuration = config,
         control = control,
         colorize = colorize,
-        columns_max = columns_max
-    )
+        columns_max = columns_max )
 
 
 class Test_000_Omni_Dispatch:
@@ -65,7 +63,7 @@ class Test_000_Omni_Dispatch:
         ''' Dispatches to rich linearizers when colorize=True. '''
         from ictr.standard import __ as std_imports
         if not std_imports.ENRICH: pytest.skip("Rich not available")
-        
+
         auxdata = make_auxdata( colorize = True )
         lines = _linearizers.linearize_omni( auxdata, {'a': 1} )
         # Rich formatting is different or at least valid
@@ -110,7 +108,7 @@ class Test_200_Exception_Plain:
             raise ValueError("msg")
         except ValueError as e:
             exc = e
-        
+
         lines = _linearizers.linearize_exception_plain( auxdata, exc )
         assert "[ValueError] msg" in lines
         # Check for stack trace parts
@@ -130,7 +128,7 @@ class Test_300_Stacktrace_Plain:
         Frame.name = 'func'
         Frame.line = 'code'
         stack = [Frame]
-        
+
         lines = _linearizers.linearize_stacktrace_plain( auxdata, stack )
         assert "File 'file.py', line 10, in func" in lines
         assert "    code" in lines
@@ -144,7 +142,7 @@ class Test_300_Stacktrace_Plain:
         Frame.name = 'function_name'
         Frame.line = 'code'
         stack = [Frame]
-        
+
         # Very narrow width to force wrap
         lines = _linearizers.linearize_stacktrace_plain(
             auxdata, stack, columns_max = 20 )
@@ -181,7 +179,7 @@ class Test_500_Rich_Variants:
         ''' Rich object linearization. '''
         from ictr.standard import __ as std_imports
         if not std_imports.ENRICH: pytest.skip("Rich not available")
-        
+
         auxdata = make_auxdata( colorize = True )
         # Real Rich output
         lines = _linearizers.linearize_object_rich( auxdata, {'a':1} )
@@ -197,7 +195,7 @@ class Test_500_Rich_Variants:
         ''' Rich text linearization. '''
         from ictr.standard import __ as std_imports
         if not std_imports.ENRICH: pytest.skip("Rich not available")
-        
+
         auxdata = make_auxdata( colorize = True )
         lines = _linearizers.linearize_text_rich( auxdata, "text" )
         # Rich should output text, possibly with styles if provided
@@ -207,16 +205,16 @@ class Test_500_Rich_Variants:
         ''' Rich exception linearization. '''
         from ictr.standard import __ as std_imports
         if not std_imports.ENRICH: pytest.skip("Rich not available")
-        
+
         exc = ValueError("msg")
-        
+
         # Test without stacktrace
         ecfg = _core.ExceptionsConfiguration( enable_stacktraces = False )
         auxdata_ns = make_auxdata( colorize = True, exceptionscfg = ecfg )
         lines = _linearizers.linearize_exception_rich( auxdata_ns, exc )
         # Rich printing of exception object might just be str(exc)
         assert any( "msg" in line for line in lines )
-        
+
         # Test with stacktrace
         ecfg_s = _core.ExceptionsConfiguration( enable_stacktraces = True )
         auxdata_s = make_auxdata( colorize = True, exceptionscfg = ecfg_s )
@@ -229,7 +227,7 @@ class Test_500_Rich_Variants:
         ''' Rich stacktrace linearization. '''
         from ictr.standard import __ as std_imports
         if not std_imports.ENRICH: pytest.skip("Rich not available")
-        
+
         auxdata = make_auxdata( colorize = True )
         # Mock StackSummary
         Frame = MagicMock()
@@ -238,7 +236,7 @@ class Test_500_Rich_Variants:
         Frame.name = 'func'
         Frame.line = 'code'
         stack = [Frame]
-        
+
         lines = _linearizers.linearize_stacktrace_rich( auxdata, stack )
         assert len(lines) > 0
         # Check for some content

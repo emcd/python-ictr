@@ -23,15 +23,14 @@
 
 from . import __
 from . import compositors as _compositors
-from . import core as _core
 from . import introducers as _intros
 
 
 def produce_flavors(
-    introducercfg: _core.IntroducerConfiguration = (
-        _core.INTRODUCER_CONFIGURATION_DEFAULT ),
-    compositorcfg: _core.CompositorConfiguration = (
-        _core.COMPOSITOR_CONFIGURATION_DEFAULT ),
+    introducercfg: _intros.IntroducerConfiguration = (
+        _intros.INTRODUCER_CONFIGURATION_DEFAULT ),
+    compositorcfg: _compositors.CompositorConfiguration = (
+        _compositors.COMPOSITOR_CONFIGURATION_DEFAULT ),
 ) -> __.FlavorsRegistry:
     ''' Produces registry of all standard flavors.
 
