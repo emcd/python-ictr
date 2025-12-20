@@ -212,7 +212,9 @@ class Dispatcher( __.immut.DataclassObject ):
         return reporter
 
     @_validate_arguments
-    def install( self, alias: str = builtins_alias_default ) -> __.typx.Self:
+    def install(
+        self, alias: __.Absential[ str ] = __.absent
+    ) -> __.typx.Self:
         ''' Installs dispatcher into builtins with provided alias.
 
             Replaces an existing dispatcher. Preserves global address
@@ -221,6 +223,7 @@ class Dispatcher( __.immut.DataclassObject ):
             Library developers should call :py:func:`register_address` instead.
         '''
         import builtins
+        if __.is_absent( alias ): alias = builtins_alias_default
         with _installer_mutex:
             dispatcher_o = getattr( builtins, alias, None )
             if isinstance( dispatcher_o, Dispatcher ):
@@ -334,7 +337,7 @@ GeneralcfgArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' ),
 ]
 InstallAliasArgument: __.typx.TypeAlias = __.typx.Annotated[
-    str,
+    __.Absential[ str ],
     __.typx.Doc(
         ''' Alias under which the dispatcher is installed in builtins. ''' ),
 ]
@@ -420,7 +423,7 @@ def trace_levels_from_environment(
 
 @_validate_arguments
 def install( # noqa: PLR0913
-    alias: InstallAliasArgument = builtins_alias_default,
+    alias: InstallAliasArgument = __.absent,
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
     printer_factories: PrinterFactoriesArgument = __.absent,
