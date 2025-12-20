@@ -143,6 +143,7 @@ def produce_columns_max_calculator(
 @_validate_arguments
 def produce_printer_factory_default(
     target: __.typx.TextIO,
+    colorize: __.Absential[ bool ] = __.absent,
     force_colorize: bool = False,
 ) -> PrinterFactory:
     ''' Produces default printer factory associated with a stream.
@@ -160,7 +161,9 @@ def produce_printer_factory_default(
                     if winansi.convert else target )
             case _: target_ = target
         return Printer(
-            target = target_, force_colorize = force_colorize )
+            target = target_,
+            colorize = colorize,
+            force_colorize = force_colorize )
 
     return produce_printer
 
