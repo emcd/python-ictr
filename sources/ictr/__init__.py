@@ -28,6 +28,7 @@ from . import exceptions
 # --- END: Injected by Copier ---
 
 
+from .configuration import *
 from .dispatchers import *
 from .printers import *
 from .textualizers import *
