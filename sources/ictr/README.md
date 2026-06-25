@@ -113,6 +113,25 @@ The `standard/` subpackage provides ready-made configurations:
 Trace levels 0-9 provide automatic hierarchical indentation (2 spaces per
 level) for visualizing call depth.
 
+## Records
+
+Records are the central data structure flowing through the pipeline. They
+carry all context needed for formatting in an immutable structure (`records.py`).
+
+```
+Record
+  ├── address: str          # Source module (e.g., "myapp.subsystem")
+  ├── flavor: Flavor        # Message category (str name or int trace level)
+  └── content: MessageContent
+        ├── summary: str | BaseException   # Main message
+        └── details: tuple[Any, ...]       # Additional context values
+```
+
+Records are created by reporters and consumed by compositors. The compositor
+transforms the record into formatted text lines, then the printer outputs
+them. This separation enables multiple output formats (plain text, Rich,
+JSON) from the same record.
+
 ## Threading Safety
 
 - Dispatcher registration uses mutex-protected initialization
