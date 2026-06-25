@@ -61,6 +61,7 @@ exclude_patterns = [
     'architecture/openspec/AGENTS.md',
     'architecture/openspec/project.md',
     'architecture/openspec/changes/**',
+    'architecture/openspec/specs/**',
 ]
 
 rst_prolog = f'''
