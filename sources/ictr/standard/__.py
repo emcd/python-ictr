@@ -30,6 +30,7 @@ from ..exceptions import *
 from ..flavors import *
 from ..printers import *
 from ..records import *
+from ..renderables import *
 from ..textualizers import *
 
 ENRICH = False

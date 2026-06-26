@@ -28,32 +28,8 @@ from . import linearizers as _linearizers
 
 
 @__.typx.runtime_checkable
-class DictionaryRenderable(
-    __.immut.Protocol, __.typx.Protocol,
-    class_mutables = __.PROTOCOL_RTC_MUTABLES,
-):
-    ''' Objects which can be rendered into a dictionary. '''
-
-    def render_as_dictionary( self ) -> dict[ str, __.typx.Any ]:
-        ''' Returns dictionary suitable for JSON/TOML serialization. '''
-        return render_as_dictionary( self )
-
-
-@__.typx.runtime_checkable
-class DictionaryRenderableDataclass(
-    __.immut.DataclassProtocol, __.typx.Protocol,
-    class_mutables = __.PROTOCOL_RTC_MUTABLES,
-):
-    ''' Dataclass objects which can be rendered into a dictionary. '''
-
-    def render_as_dictionary( self ) -> dict[ str, __.typx.Any ]:
-        ''' Returns dictionary suitable for JSON/TOML serialization. '''
-        return render_as_dictionary( self )
-
-
-@__.typx.runtime_checkable
 class JsonRenderable(
-    DictionaryRenderable, __.typx.Protocol,
+    __.Renderable, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Objects which can be rendered as JSON. '''
@@ -72,7 +48,7 @@ class JsonRenderable(
 
 @__.typx.runtime_checkable
 class JsonRenderableDataclass(
-    DictionaryRenderableDataclass, __.typx.Protocol,
+    __.RenderableDataclass, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered as JSON. '''
@@ -91,7 +67,7 @@ class JsonRenderableDataclass(
 
 @__.typx.runtime_checkable
 class MarkdownRenderable(
-    DictionaryRenderable, __.typx.Protocol,
+    __.Renderable, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Objects which can be rendered as Markdown. '''
@@ -106,7 +82,7 @@ class MarkdownRenderable(
 
 @__.typx.runtime_checkable
 class MarkdownRenderableDataclass(
-    DictionaryRenderableDataclass, __.typx.Protocol,
+    __.RenderableDataclass, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered as Markdown. '''
@@ -117,24 +93,6 @@ class MarkdownRenderableDataclass(
         ''' Returns Markdown string representation. '''
         dictionary = self.render_as_dictionary( )
         return _render_as_markdown( dictionary, auxdata )
-
-
-def render_as_dictionary( entity: object ) -> dict[ str, __.typx.Any ]:
-    ''' Returns dictionary suitable for JSON/TOML serialization. '''
-    if __.dcls.is_dataclass( entity ) and not isinstance( entity, type ):
-        result: dict[ str, __.typx.Any ] = { }
-        for field in __.dcls.fields( entity ):
-            if field.name.startswith( '_' ): continue
-            value = getattr( entity, field.name )
-            result[ field.name ] = _serialize_value( value )
-        return result
-    if hasattr( entity, '__dict__' ):
-        result = { }
-        for name, value in entity.__dict__.items( ):
-            if name.startswith( '_' ): continue
-            result[ name ] = _serialize_value( value )
-        return result
-    raise NotImplementedError  # TODO: More specific error class.
 
 
 def _dictionary_to_markdown_lines(
@@ -236,9 +194,9 @@ def _serialize_value( value: __.typx.Any ) -> __.typx.Any:
         return {
             str( k ): _serialize_value( v )  # pyright: ignore
             for k, v in value.items( ) }  # pyright: ignore
-    if isinstance(
-        value, ( DictionaryRenderable, DictionaryRenderableDataclass )
-    ): return value.render_as_dictionary( )
+    if isinstance( value, (
+        __.Renderable, __.RenderableDataclass,
+    ) ): return value.render_as_dictionary( )
     if __.dcls.is_dataclass( value ) and not isinstance( value, type ):
-        return render_as_dictionary( value )
+        return __.render_as_dictionary( value )
     return repr( value )

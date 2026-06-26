@@ -32,6 +32,7 @@ from .configuration import *
 from .dispatchers import *
 from .flavors import *
 from .printers import *
+from .renderables import *
 from .textualizers import *
 
 
