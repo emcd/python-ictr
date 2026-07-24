@@ -46,16 +46,20 @@ Ways to Contribute
 Development
 ===============================================================================
 
-Architecture
+Requirements and Design
 -------------------------------------------------------------------------------
 
-* Review the ``README.md`` files in ``sources/ictr/`` and
-  ``sources/ictr/standard/`` for architecture overview and module
-  documentation.
+* Review accepted capability requirements in ``openspec/specs/``. Manage new
+  capabilities, breaking or cross-cutting changes, architectural shifts, and
+  substantial performance or security work through OpenSpec changes in
+  ``openspec/changes/``. Follow the project's OpenSpec workflow instructions
+  and keep accepted specifications synchronized when changes are completed.
 
-* Capability specifications are maintained in ``openspec/specs/`` using the
-  OpenSpec workflow. These should be reviewed and updated when making changes
-  that affect product functionality or user experience.
+* Document stable subsystem architecture, design rationale, and local
+  constraints in the nearest source-near README, normally
+  ``sources/**/README.md``. Update the affected README when implementation
+  structure or operational patterns change rather than recreating centralized
+  architecture or specification mirrors under ``documentation/``.
 
 Guidance and Standards
 -------------------------------------------------------------------------------
@@ -93,7 +97,7 @@ Guidance and Standards
   <https://emcd.github.io/python-project-common/stable/sphinx-html/common/releases.html>`_
   as appropriate.
 
-* Although unncessary for non-maintainer contributions, additional background
+* Although unnecessary for non-maintainer contributions, additional background
   can be found in the `maintenance guide
   <https://emcd.github.io/python-project-common/stable/sphinx-html/common/maintenance.html>`_.
 
