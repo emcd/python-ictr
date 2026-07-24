@@ -422,7 +422,7 @@ def trace_levels_from_environment(
 
 
 @_validate_arguments
-def install( # noqa: PLR0913
+def install( # noqa: PLR0913, PLR0917
     alias: InstallAliasArgument = __.absent,
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
@@ -449,7 +449,7 @@ def install( # noqa: PLR0913
 
 
 @_validate_arguments
-def produce_dispatcher( # noqa: PLR0913
+def produce_dispatcher( # noqa: PLR0913, PLR0917
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
     addresscfgs: AddresscfgsArgument = __.absent,
