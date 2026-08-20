@@ -1,7 +1,7 @@
 # renderables Specification
 
 ## Purpose
-TBD - created by archiving change hoist-renderable-protocol. Update Purpose after archive.
+Defines the renderable protocol hierarchy for objects that can serialize themselves as dictionaries. Provides `Renderable` and `RenderableDataclass` at package level as cross-package contracts, with backward-compatible aliases for the legacy `DictionaryRenderable` names.
 ## Requirements
 ### Requirement: Renderable Protocol
 

@@ -27,6 +27,10 @@ from . import __
 from . import linearizers as _linearizers
 
 
+DictionaryRenderable = __.Renderable
+DictionaryRenderableDataclass = __.RenderableDataclass
+
+
 @__.typx.runtime_checkable
 class JsonRenderable(
     __.Renderable, __.typx.Protocol,

@@ -59,6 +59,8 @@ MarkdownRenderable
 render_as_markdown
 MarkdownRenderableDataclass
 render_as_markdown
+DictionaryRenderable
+DictionaryRenderableDataclass
 
 PlaintextPresentation
 JsonPresentation
