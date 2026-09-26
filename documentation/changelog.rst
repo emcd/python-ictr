@@ -23,6 +23,24 @@ Release Notes
 
 .. towncrier release notes start
 
+ictr 1.0a1 (2026-09-26)
+=======================
+
+Enhancements
+------------
+
+- API: Add Presentation protocol and PlaintextPresentation, JsonPresentation,
+  MarkdownPresentation classes in ictr.standard for rendering objects in
+  different formats. Presentations are exported from ictr.standard.
+- API: Add Renderable and RenderableDataclass protocols at package level for
+  objects that can render themselves as dictionaries. RenderableDataclass
+  inherits from Renderable, following the classcore protocol hierarchy pattern.
+- API: Export configuration and flavors module members from ictr package for
+  direct import access.
+- API: Support optional requests for colorization or decolorization in printers.
+  Use consistent typing.TextIO interface for printer output streams.
+
+
 ictr 1.0a0 (2025-12-11)
 =======================
 
