@@ -72,7 +72,7 @@ def _serialize_value( value: __.typx.Any ) -> __.typx.Any:
         return {
             str( k ): _serialize_value( v )  # pyright: ignore
             for k, v in value.items( ) }  # pyright: ignore
-    if isinstance( value, Renderable ):
+    if callable( getattr( value, 'render_as_dictionary', None ) ):
         return value.render_as_dictionary( )
     if __.dcls.is_dataclass( value ) and not isinstance( value, type ):
         return render_as_dictionary( value )
