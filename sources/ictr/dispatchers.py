@@ -212,7 +212,9 @@ class Dispatcher( __.immut.DataclassObject ):
         return reporter
 
     @_validate_arguments
-    def install( self, alias: str = builtins_alias_default ) -> __.typx.Self:
+    def install(
+        self, alias: __.Absential[ str ] = __.absent
+    ) -> __.typx.Self:
         ''' Installs dispatcher into builtins with provided alias.
 
             Replaces an existing dispatcher. Preserves global address
@@ -221,6 +223,7 @@ class Dispatcher( __.immut.DataclassObject ):
             Library developers should call :py:func:`register_address` instead.
         '''
         import builtins
+        if __.is_absent( alias ): alias = builtins_alias_default
         with _installer_mutex:
             dispatcher_o = getattr( builtins, alias, None )
             if isinstance( dispatcher_o, Dispatcher ):
@@ -334,7 +337,7 @@ GeneralcfgArgument: __.typx.TypeAlias = __.typx.Annotated[
         ''' ),
 ]
 InstallAliasArgument: __.typx.TypeAlias = __.typx.Annotated[
-    str,
+    __.Absential[ str ],
     __.typx.Doc(
         ''' Alias under which the dispatcher is installed in builtins. ''' ),
 ]
@@ -419,8 +422,8 @@ def trace_levels_from_environment(
 
 
 @_validate_arguments
-def install( # noqa: PLR0913
-    alias: InstallAliasArgument = builtins_alias_default,
+def install( # noqa: PLR0913, PLR0917
+    alias: InstallAliasArgument = __.absent,
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
     printer_factories: PrinterFactoriesArgument = __.absent,
@@ -446,7 +449,7 @@ def install( # noqa: PLR0913
 
 
 @_validate_arguments
-def produce_dispatcher( # noqa: PLR0913
+def produce_dispatcher( # noqa: PLR0913, PLR0917
     active_flavors: ActiveFlavorsArgument = __.absent,
     generalcfg: GeneralcfgArgument = __.absent,
     addresscfgs: AddresscfgsArgument = __.absent,
@@ -599,6 +602,13 @@ def _discover_invoker_module_name( ) -> str:
     return name
 
 
+def _is_text_stream(
+    factory: _printers.PrinterFactoryUnion
+) -> __.typx.TypeIs[ __.typx.TextIO ]:
+    ''' Runtime check for text streams (type guard for static analysis). '''
+    return isinstance( factory, __.io.TextIOBase )
+
+
 def _iterate_address_ancestry( name: str ) -> __.cabc.Iterator[ str ]:
     parts = name.split( '.' )
     for i in range( len( parts ) ):
@@ -651,7 +661,7 @@ def _resolve_printer(
     flavor: _flavors.Flavor,
 ) -> _printers.Printer:
     from .standard import Printer
-    if isinstance( factory, __.io.TextIOBase ):
+    if _is_text_stream( factory ):
         return Printer( target = factory )
     return factory( address, flavor )
 

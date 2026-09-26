@@ -25,7 +25,7 @@ dependencies = [
   # --- BEGIN: Injected by Copier ---
   'absence~=1.1',
   'dynadoc~=1.4',
-  'frigid~=4.2',
+  'frigid~=4.3',
   # --- END: Injected by Copier ---
 ]
 classifiers = [ # https://pypi.org/classifiers
@@ -186,7 +186,6 @@ python = [
     '3.12',
     '3.13',
     '3.14',
-    'pypy3.10',
     'pypy3.11',
 ]
 [tool.hatch.version]

@@ -40,11 +40,11 @@ class Test_000_Introducer_Call:
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = False
         control.columns_max = None
-        
+
         content = _records.MessageContent( summary = '', details = () )
         record = _records.Record(
             address = 'test', content = content, flavor = 'note' )
-        
+
         # Default template is "{flavor}| "
         # Default label_as is Words. 'note' label is 'NOTE'.
         result = introducer( control, record )
@@ -55,43 +55,43 @@ class Test_000_Introducer_Call:
         introducer = _intros.Introducer()
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = False
-        
+
         content = _records.MessageContent( summary = '', details = () )
         record = _records.Record(
             address = 'test', content = content, flavor = 0 )
-        
+
         # Default label_as is Words. Level 0 is 'TRACE0'.
         result = introducer( control, record )
         assert result == 'TRACE0| '
 
     def test_140_custom_label_as_emoji( self ):
         ''' Introducer renders emoji label. '''
-        config = _core.IntroducerConfiguration(
+        config = _intros.IntroducerConfiguration(
             label_as = _core.LabelPresentations.Emoji )
         introducer = _intros.Introducer( configuration = config )
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = False
-        
+
         content = _records.MessageContent( summary = '', details = () )
         record = _records.Record(
             address = 'test', content = content, flavor = 'note' )
-        
+
         # note emoji is '\N{Information Source}\ufe0f'
         result = introducer( control, record )
         assert '\N{Information Source}' in result
 
     def test_300_template_interpolation( self ):
         ''' Template interpolates variables. '''
-        config = _core.IntroducerConfiguration(
+        config = _intros.IntroducerConfiguration(
             template = "{flavor} @ {address}| " )
         introducer = _intros.Introducer( configuration = config )
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = False
-        
+
         content = _records.MessageContent( summary = '', details = () )
         record = _records.Record(
             address = 'test.addr', content = content, flavor = 'error' )
-        
+
         result = introducer( control, record )
         assert result == 'ERROR @ test.addr| '
 
@@ -101,20 +101,20 @@ class Test_000_Introducer_Call:
         if not std_imports.ENRICH:
             pytest.skip("Rich not available")
 
-        config = _core.IntroducerConfiguration()
+        config = _intros.IntroducerConfiguration()
         introducer = _intros.Introducer( configuration = config )
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = True
         control.columns_max = 80
-        
+
         content = _records.MessageContent( summary = '', details = () )
         record = _records.Record(
             address = 'test', content = content, flavor = 'note' )
-        
+
         # We can't mock produce_rich_console, so we just verify it runs
         # without error and returns a string (implicit check).
         # We can also check if result contains ANSI codes if we want to be
         # strict, but exact output depends on Rich version/config.
-        
+
         result = introducer( control, record )
         assert isinstance( result, str )

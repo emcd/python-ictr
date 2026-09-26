@@ -26,6 +26,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from ictr import printers as _printers
+from ictr.standard import compositors as _compositors
 from ictr.standard import core as _core
 
 
@@ -34,14 +35,14 @@ class Test_000_CompositorConfiguration:
 
     def test_000_defaults( self ):
         ''' Defaults are correct. '''
-        config = _core.CompositorConfiguration()
+        config = _compositors.CompositorConfiguration()
         assert config.line_prefix_initial == ''
         assert config.details_separator == '\n\n'
         assert config.linearizercfg is not None
 
     def test_140_immutability( self ):
         ''' Configuration is immutable. '''
-        config = _core.CompositorConfiguration()
+        config = _compositors.CompositorConfiguration()
         with pytest.raises( AttributeError ):
             config.line_prefix_initial = '>>'
 
@@ -51,37 +52,33 @@ class Test_010_CompositorState:
 
     def test_300_from_configuration_rich_available( self ):
         ''' State creation with Rich logic. '''
-        config = _core.CompositorConfiguration()
+        config = _compositors.CompositorConfiguration()
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = True
         control.columns_max = 80
-        
-        # We cannot patch ENRICH because module is immutable.
-        # We check the actual value.
         from ictr.standard import __ as std_imports
         expected_colorize = std_imports.ENRICH
-        
-        state = _core.CompositorState.from_configuration( config, control )
-        
+        state = _compositors.CompositorState.from_configuration(
+            config, control )
+
         assert state.linearizer.colorize is expected_colorize
         if expected_colorize:
             assert state.linearizer.columns_max == 80
 
     def test_310_from_configuration_rich_unavailable( self ):
+        # TODO: Fix this worthless Gemini-vibe trash test.
         ''' State creation with Rich unavailable. '''
-        # If ENRICH is True, we cannot test the False path without patching.
         from ictr.standard import __ as std_imports
         if std_imports.ENRICH:
             pytest.skip(
                 "Cannot test ENRICH=False path when Rich is installed "
                 "and module is immutable" )
-            
-        config = _core.CompositorConfiguration()
+        config = _compositors.CompositorConfiguration()
         control = MagicMock( spec = _printers.TextualizationControl )
         control.colorize = True
         control.columns_max = 80
-        
-        state = _core.CompositorState.from_configuration( config, control )
+        state = _compositors.CompositorState.from_configuration(
+            config, control )
         assert state.linearizer.colorize is False
 
 

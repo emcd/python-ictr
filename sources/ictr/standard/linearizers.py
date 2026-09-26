@@ -25,12 +25,78 @@ from . import __
 from . import core as _core
 
 
+class LinearizerConfiguration( __.immut.DataclassObject ):
+    ''' Behaviors for standard textual linearizer. '''
+
+    colorize: __.typx.Annotated[
+        bool, __.typx.Doc( ''' Attempt to colorize? ''' )
+    ] = True
+    columns_constraint: __.typx.Annotated[
+        _core.ColumnsConstraints,
+        __.ddoc.Doc(
+            ''' How to constrain text which exceeds maximum columns. ''' ),
+    ] = _core.ColumnsConstraints.Complect
+    columns_max: __.typx.Annotated[
+        __.typx.Optional[ int ],
+        __.ddoc.Doc(
+            ''' How many columns per line to assume if printer does not tell.
+
+                If ``None``, then infinite number of columns is assumed.
+            ''' ),
+    ] = None
+    exceptionscfg: __.typx.Annotated[
+        _core.ExceptionsConfiguration,
+        __.ddoc.Doc( ''' Configuration pertaining to exceptions. ''' ),
+    ] = __.dcls.field( default_factory = _core.ExceptionsConfiguration )
+    incision_boundary: __.typx.Annotated[
+        _core.IncisionBoundaries,
+        __.ddoc.Doc(
+            ''' Where to constrain text which exceeds maximum columns. ''' ),
+    ] = _core.IncisionBoundaries.Wordsplits
+
+
+class LinearizerState( __.immut.DataclassObject ):
+    ''' Data transfer object for linearizer state. '''
+
+    configuration: LinearizerConfiguration
+    control: __.TextualizationControl
+    colorize: __.typx.Annotated[ bool, __.ddoc.Doc( ''' Colorize? ''' ) ]
+    columns_constraint: __.typx.Annotated[
+        _core.ColumnsConstraints,
+        __.ddoc.Doc( ''' Effective columns constraint for lines. ''' ),
+    ] = _core.ColumnsConstraints.Exceed
+    columns_max: __.typx.Annotated[
+        __.Absential[ int ],
+        __.ddoc.Doc(
+            ''' Available line length (maximum columns) of target. ''' ),
+    ] = __.absent
+
+    @classmethod
+    def from_configuration(
+        cls,
+        configuration: LinearizerConfiguration,
+        control: __.TextualizationControl,
+    ) -> __.typx.Self:
+        colorize = __.ENRICH and control.colorize and configuration.colorize
+        columns_constraint = configuration.columns_constraint
+        columns_max = control.columns_max or configuration.columns_max
+        if columns_max is None:
+            columns_constraint = _core.ColumnsConstraints.Exceed
+            columns_max = __.absent
+        return cls(
+            configuration = configuration,
+            control = control,
+            colorize = colorize,
+            columns_constraint = columns_constraint,
+            columns_max = columns_max )
+
+
 class Linearizer( __.Linearizer ):
 
     configuration: __.typx.Annotated[
-        _core.LinearizerConfiguration,
+        LinearizerConfiguration,
         __.ddoc.Doc( ''' Default behaviors for textual linearizer. ''' ),
-    ] = __.dcls.field( default_factory = _core.LinearizerConfiguration )
+    ] = __.dcls.field( default_factory = LinearizerConfiguration )
 
     def __call__(
         self,
@@ -38,13 +104,13 @@ class Linearizer( __.Linearizer ):
         entity: object,
         columns_max: __.Absential[ int ] = __.absent,
     ) -> tuple[ str, ... ]:
-        auxdata = _core.LinearizerState.from_configuration(
+        auxdata = LinearizerState.from_configuration(
             configuration = self.configuration, control = control )
         return linearize_omni( auxdata, entity, columns_max = columns_max )
 
 
 def linearize_exception_plain(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     exception: BaseException,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -60,7 +126,7 @@ def linearize_exception_plain(
 
 
 def linearize_exception_rich(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     exception: BaseException,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -78,7 +144,7 @@ def linearize_exception_rich(
 
 
 def linearize_object_plain(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -90,7 +156,7 @@ def linearize_object_plain(
 
 
 def linearize_object_rich(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -101,7 +167,7 @@ def linearize_object_rich(
 
 
 def linearize_omni(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -111,7 +177,7 @@ def linearize_omni(
 
 
 def linearize_omni_plain(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -123,7 +189,7 @@ def linearize_omni_plain(
 
 
 def linearize_omni_rich(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     entity: object,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -135,7 +201,7 @@ def linearize_omni_rich(
 
 
 def linearize_stacktrace_plain(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     stacktrace: __.tb.StackSummary,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -176,7 +242,7 @@ def linearize_stacktrace_plain(
 
 
 def linearize_stacktrace_rich(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     stacktrace: __.tb.StackSummary,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -196,7 +262,7 @@ def linearize_stacktrace_rich(
 
 
 def linearize_text_plain(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     text: str,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:
@@ -219,7 +285,7 @@ def linearize_text_plain(
 
 
 def linearize_text_rich(
-    auxdata: _core.LinearizerState,
+    auxdata: LinearizerState,
     text: str,
     columns_max: __.Absential[ int ] = __.absent,
 ) -> tuple[ str, ... ]:

@@ -30,12 +30,14 @@ from ..exceptions import *
 from ..flavors import *
 from ..printers import *
 from ..records import *
+from ..renderables import *
 from ..textualizers import *
 
 ENRICH = False
 try:
 
     import rich.console as      rich_console
+    import rich.markdown as     rich_markdown
     import rich.style as        rich_style
     import rich.text as         rich_text
     import rich.traceback as    rich_traceback

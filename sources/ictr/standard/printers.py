@@ -33,8 +33,9 @@ _validate_arguments = (
 class Printer( __.Printer ):
     ''' Simple printer that writes to a text stream. '''
 
-    target: __.io.TextIOBase
-    force_color: bool = False
+    target: __.typx.TextIO
+    colorize: __.Absential[ bool ] = __.absent
+    force_colorize: bool = False
 
     def __call__( self, record: str | __.Record ) -> None:
         text = record if isinstance( record, str ) else str( record )
@@ -57,6 +58,9 @@ class Printer( __.Printer ):
             columns_max_calculator = columns_max_calculator )
 
     def _determine_colorization( self ) -> bool:
-        colorize = self.target.isatty( )
-        if __.os.environ.get( 'NO_COLOR' ): colorize = False
-        return colorize or self.force_color
+        colorize = self.colorize
+        on_tty = self.target.isatty( )
+        if __.is_absent( colorize ):
+            colorize = False if __.os.environ.get( 'NO_COLOR' ) else on_tty
+        else: colorize = colorize and on_tty
+        return colorize or self.force_colorize

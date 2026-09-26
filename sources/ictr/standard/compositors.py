@@ -23,17 +23,85 @@
 
 from . import __
 from . import core as _core
+from . import linearizers as _linearizers
 
 from .linearizers import linearize_omni as _linearize_omni
+
+
+class CompositorConfiguration( __.immut.DataclassObject ):
+    ''' Behaviors and format for text from standard compositor. '''
+
+    detail_prefix_initial: __.typx.Annotated[
+        str, __.ddoc.Doc( ''' Initial prefix for message detail. ''' )
+    ] = ''
+    detail_prefix_subsequent: __.typx.Annotated[
+        __.typx.Optional[ str ],
+        __.ddoc.Doc(
+            ''' Subsequent prefix for message detail.
+
+                If ``None``, then automatic padding is calculated based on the
+                visual width of the initial prefix for message detail.
+            ''' ),
+    ] = None
+    # TODO? 'details_maximum'
+    details_separator: __.typx.Annotated[
+        str, __.ddoc.Doc( ''' Separator between details. ''' )
+    ] = '\n\n'
+    line_prefix_initial: __.typx.Annotated[
+        str, __.ddoc.Doc( ''' Prefix before first line. ''' )
+    ] = ''
+    line_prefix_subsequent: __.typx.Annotated[
+        __.typx.Optional[ str ],
+        __.ddoc.Doc(
+            ''' Prefix before each line after the first.
+
+                If ``None``, then automatic padding is calculated based on the
+                visual width of the initial line prefix.
+            ''' ),
+    ] = None
+    linearizercfg: __.typx.Annotated[
+        _linearizers.LinearizerConfiguration,
+        __.ddoc.Doc(
+            ''' Text linearization and pretty-formatting behaviors. ''' ),
+    ] = __.dcls.field( default_factory = _linearizers.LinearizerConfiguration )
+    summary_incision_ratio: __.typx.Annotated[
+        float,
+        __.ddoc.Doc(
+            ''' Ratio of introduction width to full width at which to split.
+
+                If ratio is met or exceeded, then introduction and summary are
+                split onto consecutive lines.
+            ''' ),
+    ] = 0.3
+
+
+COMPOSITOR_CONFIGURATION_DEFAULT = CompositorConfiguration( )
+
+
+class CompositorState( __.immut.DataclassObject ):
+    ''' Data transfer object for textualizer state. '''
+
+    configuration: CompositorConfiguration
+    linearizer: _linearizers.LinearizerState
+
+    @classmethod
+    def from_configuration(
+        cls,
+        configuration: CompositorConfiguration,
+        control: __.TextualizationControl,
+    ) -> __.typx.Self:
+        linearizer = _linearizers.LinearizerState.from_configuration(
+            configuration = configuration.linearizercfg, control = control )
+        return cls( configuration = configuration, linearizer = linearizer )
 
 
 class Compositor( __.Compositor ):
     ''' Standard compositor. '''
 
     configuration: __.typx.Annotated[
-        _core.CompositorConfiguration,
+        CompositorConfiguration,
         __.ddoc.Doc( ''' Default behaviors and format for text. ''' ),
-    ] = __.dcls.field( default_factory = _core.CompositorConfiguration )
+    ] = __.dcls.field( default_factory = CompositorConfiguration )
     introducer: __.typx.Annotated[
         __.IntroducerUnion,
         __.ddoc.Doc(
@@ -49,7 +117,7 @@ class Compositor( __.Compositor ):
     ) -> str:
         configuration = self.configuration
         ecfg = configuration.linearizercfg.exceptionscfg
-        auxdata = _core.CompositorState.from_configuration(
+        auxdata = CompositorState.from_configuration(
             configuration = configuration, control = control )
         content = record.content
         introducer = self.introducer
@@ -79,7 +147,7 @@ def _calculate_ccount_max(
     return max( i_ccount, __.count_columns_visual( subsequent ) )
 
 
-def _render_detail( auxdata: _core.CompositorState, detail: object ) -> str:
+def _render_detail( auxdata: CompositorState, detail: object ) -> str:
     configuration = auxdata.configuration
     columns_max = auxdata.linearizer.columns_max
     detail_prefix_i = configuration.detail_prefix_initial
@@ -112,7 +180,7 @@ def _render_detail( auxdata: _core.CompositorState, detail: object ) -> str:
 
 
 def _render_summary(
-    auxdata: _core.CompositorState, introduction: str, summary: object
+    auxdata: CompositorState, introduction: str, summary: object
 ) -> str:
     match auxdata.linearizer.columns_constraint:
         case _core.ColumnsConstraints.Complect:
@@ -122,7 +190,7 @@ def _render_summary(
 
 
 def _complect_render_summary(
-    auxdata: _core.CompositorState, introduction: str, summary: object
+    auxdata: CompositorState, introduction: str, summary: object
 ) -> str:
     configuration = auxdata.configuration
     columns_max = auxdata.linearizer.columns_max
@@ -164,7 +232,7 @@ def _complect_render_summary(
 
 
 def _exceed_render_summary(
-    auxdata: _core.CompositorState, introduction: str, summary: object
+    auxdata: CompositorState, introduction: str, summary: object
 ) -> str:
     configuration = auxdata.configuration
     line_prefix_i = configuration.line_prefix_initial
@@ -182,7 +250,7 @@ def _exceed_render_summary(
 
 
 def _update_lines_collection(
-    configuration: _core.CompositorConfiguration,
+    configuration: CompositorConfiguration,
     collector: list[ str ],
     line_initial: str,
     lines_subsequent: __.typx.Optional[ tuple[ str, ... ] ] = None,
