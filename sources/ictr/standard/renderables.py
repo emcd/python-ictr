@@ -52,21 +52,10 @@ class JsonRenderable(
 
 @__.typx.runtime_checkable
 class JsonRenderableDataclass(
-    __.RenderableDataclass, __.typx.Protocol,
+    JsonRenderable, __.RenderableDataclass, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered as JSON. '''
-
-    def render_as_json(
-        self,
-        auxdata: _linearizers.LinearizerState, /, *,
-        compact: bool = False,
-        indent: int = 2,
-    ) -> str:
-        ''' Returns JSON string representation. '''
-        dictionary = self.render_as_dictionary( )
-        return _render_as_json(
-            dictionary, compact = compact, indent = indent )
 
 
 @__.typx.runtime_checkable
@@ -86,17 +75,10 @@ class MarkdownRenderable(
 
 @__.typx.runtime_checkable
 class MarkdownRenderableDataclass(
-    __.RenderableDataclass, __.typx.Protocol,
+    MarkdownRenderable, __.RenderableDataclass, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered as Markdown. '''
-
-    def render_as_markdown(
-        self, auxdata: _linearizers.LinearizerState, /
-    ) -> str:
-        ''' Returns Markdown string representation. '''
-        dictionary = self.render_as_dictionary( )
-        return _render_as_markdown( dictionary, auxdata )
 
 
 def _dictionary_to_markdown_lines(
@@ -198,9 +180,7 @@ def _serialize_value( value: __.typx.Any ) -> __.typx.Any:
         return {
             str( k ): _serialize_value( v )  # pyright: ignore
             for k, v in value.items( ) }  # pyright: ignore
-    if isinstance( value, (
-        __.Renderable, __.RenderableDataclass,
-    ) ): return value.render_as_dictionary( )
+    if isinstance( value, __.Renderable ): return value.render_as_dictionary( )
     if __.dcls.is_dataclass( value ) and not isinstance( value, type ):
         return __.render_as_dictionary( value )
     return repr( value )

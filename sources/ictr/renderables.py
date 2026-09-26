@@ -38,14 +38,10 @@ class Renderable(
 
 @__.typx.runtime_checkable
 class RenderableDataclass(
-    __.immut.DataclassProtocol, __.typx.Protocol,
+    Renderable, __.immut.DataclassProtocol, __.typx.Protocol,
     class_mutables = __.PROTOCOL_RTC_MUTABLES,
 ):
     ''' Dataclass objects which can be rendered into a dictionary. '''
-
-    def render_as_dictionary( self ) -> dict[ str, __.typx.Any ]:
-        ''' Returns dictionary suitable for JSON/TOML serialization. '''
-        return render_as_dictionary( self )
 
 
 def render_as_dictionary( entity: object ) -> dict[ str, __.typx.Any ]:
@@ -76,7 +72,7 @@ def _serialize_value( value: __.typx.Any ) -> __.typx.Any:
         return {
             str( k ): _serialize_value( v )  # pyright: ignore
             for k, v in value.items( ) }  # pyright: ignore
-    if isinstance( value, ( Renderable, RenderableDataclass ) ):
+    if isinstance( value, Renderable ):
         return value.render_as_dictionary( )
     if __.dcls.is_dataclass( value ) and not isinstance( value, type ):
         return render_as_dictionary( value )
