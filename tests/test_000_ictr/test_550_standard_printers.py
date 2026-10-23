@@ -136,3 +136,44 @@ class Test_000_Printer:
         combined = "".join(calls)
         assert "Red" in combined
         assert "\x1b" not in combined
+
+
+class _DuckStreamNoTty:
+    ''' Duck-typed stream without isatty or encoding. '''
+
+    def __init__( self ):
+        self.contents = [ ]
+
+    def write( self, text ):
+        self.contents.append( text )
+        return len( text )
+
+    def flush( self ):
+        pass
+
+
+class Test_500_Duck_Typing:
+    ''' Duck-typed target support. '''
+
+    def test_500_colorization_false_without_isatty( self ):
+        ''' Missing isatty implies non-tty colorization. '''
+        target = _DuckStreamNoTty( )
+        printer = _printers.Printer( target = target )
+        assert printer._determine_colorization( ) is False
+
+    def test_510_explicit_no_colorize_strips_ansi( self ):
+        ''' Explicit colorize=False strips ANSI on duck-typed target. '''
+        target = _DuckStreamNoTty( )
+        printer = _printers.Printer( target = target, colorize = False )
+        printer( '\x1b[31mRed\x1b[0m' )
+        combined = ''.join( target.contents )
+        assert 'Red' in combined
+        assert '\x1b' not in combined
+
+    def test_520_non_string_encoding_yields_no_charset( self ):
+        ''' Non-string encoding attribute yields None charset. '''
+        target = _DuckStreamNoTty( )
+        target.encoding = object( )
+        printer = _printers.Printer( target = target )
+        control = printer.provide_textualization_control( )
+        assert control.charset is None

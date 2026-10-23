@@ -36,7 +36,7 @@ from .renderables import *
 from .textualizers import *
 
 
-__version__ = '1.0a1'
+__version__ = '1.0a2'
 
 
 __.immut.finalize_module( __name__, recursive = True )

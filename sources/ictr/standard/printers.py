@@ -50,8 +50,9 @@ class Printer( __.Printer ):
         columns_max_calculator = (
             __.produce_columns_max_calculator( self.target ) )
         charset = getattr( self.target, 'encoding', None )
-        if charset:
+        if isinstance( charset, str ) and charset:
             charset = __.codecs.lookup( charset ).name  # normalize
+        else: charset = None
         return __.TextualizationControl(
             charset = charset,
             colorize = colorize,
@@ -59,7 +60,8 @@ class Printer( __.Printer ):
 
     def _determine_colorization( self ) -> bool:
         colorize = self.colorize
-        on_tty = self.target.isatty( )
+        isatty = getattr( self.target, 'isatty', None )
+        on_tty = bool( isatty( ) ) if callable( isatty ) else False
         if __.is_absent( colorize ):
             colorize = False if __.os.environ.get( 'NO_COLOR' ) else on_tty
         else: colorize = colorize and on_tty
