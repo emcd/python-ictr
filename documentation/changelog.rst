@@ -23,6 +23,21 @@ Release Notes
 
 .. towncrier release notes start
 
+ictr 1.0a2 (2026-10-23)
+=======================
+
+Removals
+--------
+
+- Require Python 3.12 or later, adding support for Python 3.15 and ending support for Python 3.10, 3.11, and PyPy.
+
+
+Repairs
+-------
+
+- Accept duck-typed text streams, such as file-descriptor wrappers and test doubles, as printer targets and dispatcher factories.
+
+
 ictr 1.0a1 (2026-09-26)
 =======================
 
