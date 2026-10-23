@@ -313,3 +313,24 @@ class Test_950_Hierarchy:
                 delattr( builtins, 'ictr' )
             else:
                 setattr( builtins, 'ictr', original )
+
+class Test_970_Text_Streams:
+    ''' Duck-typed text stream resolution. '''
+
+    def test_970_is_text_stream_duck( self ):
+        ''' _is_text_stream accepts duck-typed streams. '''
+        class Duck:
+            def write( self, text ): return len( text )
+        assert _dispatchers._is_text_stream( Duck( ) ) is True
+        assert _dispatchers._is_text_stream( lambda a, f: None ) is False
+
+    def test_971_resolve_printer_duck( self ):
+        ''' _resolve_printer routes duck-typed streams to Printer. '''
+        from ictr.standard.printers import Printer
+        class Duck:
+            def write( self, text ): return len( text )
+            def flush( self ): pass
+        target = Duck( )
+        printer = _dispatchers._resolve_printer( target, 'a', 'note' )
+        assert isinstance( printer, Printer )
+        assert printer.target is target

@@ -122,3 +122,35 @@ class Test_300_Columns_Max_Calculator:
             calculator = _printers.produce_columns_max_calculator( mock_file )
             assert callable( calculator )
             assert calculator() is None
+
+
+class _DuckStream:
+    ''' Minimal duck-typed text stream (no TextIOBase, no isatty). '''
+
+    def __init__( self ):
+        self.contents = [ ]
+
+    def write( self, text ):
+        self.contents.append( text )
+        return len( text )
+
+    def flush( self ):
+        pass
+
+
+class Test_400_Duck_Typing:
+    ''' Duck-typed stream acceptance. '''
+
+    def test_400_factory_accepts_duck_typed_target( self ):
+        ''' produce_printer_factory_default accepts duck-typed target. '''
+        target = _DuckStream( )
+        factory = _printers.produce_printer_factory_default( target )
+        assert callable( factory )
+        printer = factory( 'address', 'flavor' )
+        assert isinstance( printer, _printers.Printer )
+
+    def test_410_calculator_accepts_duck_without_fileno( self ):
+        ''' produce_columns_max_calculator accepts duck without fileno. '''
+        target = _DuckStream( )
+        calculator = _printers.produce_columns_max_calculator( target )
+        assert calculator is None

@@ -48,6 +48,9 @@ def validate_arguments(
                 classes = _reduce_annotation(
                     annotation, globalvars = globalvars )
                 if not isinstance( value, classes ):
+                    if ( __.io.TextIOBase in classes
+                         and callable( getattr( value, 'write', None ) ) ):
+                        continue # Duck-typed text stream.
                     raise errorclass( name, classes )
             return function( *posargs, **nomargs )
 

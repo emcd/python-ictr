@@ -606,7 +606,7 @@ def _is_text_stream(
     factory: _printers.PrinterFactoryUnion
 ) -> __.typx.TypeIs[ __.typx.TextIO ]:
     ''' Runtime check for text streams (type guard for static analysis). '''
-    return isinstance( factory, __.io.TextIOBase )
+    return callable( getattr( factory, 'write', None ) )
 
 
 def _iterate_address_ancestry( name: str ) -> __.cabc.Iterator[ str ]:
