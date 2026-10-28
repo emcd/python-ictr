@@ -96,3 +96,21 @@ class Test_200_Exception_Behavior:
         assert issubclass( _exceptions.ModuleInferenceFailure, RuntimeError )
         assert issubclass(
             _exceptions.SummaryLinearizationFailure, RuntimeError )
+
+
+class Test_300_Occupant_Naming:
+    ''' Occupant disclosure in displacement errors. '''
+
+    def test_300_names_occupant_type( self ):
+        ''' AttributeNondisplacement names occupant type. '''
+        from types import SimpleNamespace
+        class Occupant: pass
+        holder = SimpleNamespace( attr = Occupant( ) )
+        exc = _exceptions.AttributeNondisplacement( holder, 'attr' )
+        assert 'occupant:' in str( exc )
+        assert 'Occupant' in str( exc )
+
+    def test_310_absent_occupant_falls_back( self ):
+        ''' Missing occupant yields base message. '''
+        exc = _exceptions.AttributeNondisplacement( 'obj', 'attr' )
+        assert "Cannot displace attribute 'attr' on: obj" in str( exc )

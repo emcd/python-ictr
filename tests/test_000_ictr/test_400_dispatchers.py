@@ -334,3 +334,23 @@ class Test_970_Text_Streams:
         printer = _dispatchers._resolve_printer( target, 'a', 'note' )
         assert isinstance( printer, Printer )
         assert printer.target is target
+
+
+class Test_980_Foreign_Occupant:
+    ''' Refusal of foreign builtins occupant. '''
+
+    def test_980_install_names_foreign_occupant( self ):
+        ''' install names foreign occupant type in error. '''
+        import builtins
+        class Foreign: pass
+        original = getattr( builtins, 'ictr', None )
+        setattr( builtins, 'ictr', Foreign( ) )
+        try:
+            with pytest.raises( _exceptions.AttributeNondisplacement ) as info:
+                _dispatchers.Dispatcher( ).install( )
+            assert 'occupant:' in str( info.value )
+            assert 'Foreign' in str( info.value )
+        finally:
+            if original is None:
+                delattr( builtins, 'ictr' )
+            else: setattr( builtins, 'ictr', original )

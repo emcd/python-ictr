@@ -47,8 +47,14 @@ class AttributeNondisplacement( Omnierror, AttributeError ):
     ''' Cannot displace existing attribute. '''
 
     def __init__( self, object_: __.typx.Any, name: str ):
-        super( ).__init__(
-            f"Cannot displace attribute {name!r} on: {object_}" )
+        try: occupant = getattr( object_, name, None )
+        except Exception: occupant = None
+        message = f"Cannot displace attribute {name!r} on: {object_}"
+        if occupant is not None:
+            oclass: type[ object ] = occupant.__class__
+            message += (
+                f" (occupant: {oclass.__module__}.{oclass.__qualname__})" )
+        super( ).__init__( f"{message}." )
 
 
 class ContentMisclassification( Omnierror, TypeError ):
